@@ -283,6 +283,8 @@ if (empty($_SESSION['cms_user_id'])) {
         <div class="nav-section">Gallery</div>
         <a href="gallery-categories.php" class="<?= $currentFile === 'gallery-categories.php' ? 'active' : '' ?>">🗂️ Categories</a>
         <a href="gallery-images.php" class="<?= $currentFile === 'gallery-images.php' ? 'active' : '' ?>">🖼️ Images</a>
+        <div class="nav-section">SEO</div>
+        <a href="seo-settings.php" class="<?= $currentFile === 'seo-settings.php' ? 'active' : '' ?>">🔎 Global SEO</a>
         <div class="nav-section">Contact</div>
         <a href="contact-methods.php" class="<?= $currentFile === 'contact-methods.php' ? 'active' : '' ?>">📞 Methods</a>
         <a href="contact-submissions.php" class="<?= $currentFile === 'contact-submissions.php' ? 'active' : '' ?>">📬 Submissions</a>

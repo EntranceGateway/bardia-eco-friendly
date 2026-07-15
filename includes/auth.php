@@ -35,3 +35,15 @@ function requireAuth(): object
     jsonResponse(401, 'error', null, 'Access denied. No authentication provided.');
     exit; // Should be unreachable due to jsonResponse()
 }
+
+function requireRole(array $allowedRoles): object
+{
+    $auth = requireAuth();
+    $role = $auth->role ?? '';
+
+    if (!in_array($role, $allowedRoles, true)) {
+        jsonResponse(403, 'error', null, 'You do not have permission to perform this action.');
+    }
+
+    return $auth;
+}

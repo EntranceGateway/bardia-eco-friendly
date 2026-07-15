@@ -14,6 +14,8 @@ $auth = requireAuth();
 
 $categoryId   = (int)    ($_POST['category_id']   ?? 0);
 $altText      = sanitize(($_POST['alt_text']       ?? ''));
+$titleText    = sanitize(($_POST['title_text']     ?? ''));
+$caption      = sanitize(($_POST['caption']        ?? ''));
 $displayOrder = (int)    ($_POST['display_order']  ?? 0);
 
 if ($categoryId <= 0) {
@@ -54,6 +56,13 @@ if (!in_array($mimeType, $allowed, true)) {
     jsonResponse(400, 'error', null, 'Invalid file type. Allowed: jpg, jpeg, png, webp.');
 }
 
+$imageSize = getimagesize($file['tmp_name']);
+if ($imageSize === false) {
+    jsonResponse(400, 'error', null, 'Uploaded file is not a valid image.');
+}
+$width  = (int) $imageSize[0];
+$height = (int) $imageSize[1];
+
 // Build destination path
 $storageDir = __DIR__ . '/../../storage/gallery/';
 if (!is_dir($storageDir)) {
@@ -73,9 +82,9 @@ if (!move_uploaded_file($file['tmp_name'], $destination)) {
 $imageUrl = '/storage/gallery/' . $filename;
 
 $stmt = $conn->prepare(
-    "INSERT INTO gallery_images (category_id, image_url, alt_text, display_order) VALUES (?, ?, ?, ?)"
+    "INSERT INTO gallery_images (category_id, image_url, alt_text, title_text, caption, width, height, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 );
-$stmt->bind_param('issi', $categoryId, $imageUrl, $altText, $displayOrder);
+$stmt->bind_param('issssiii', $categoryId, $imageUrl, $altText, $titleText, $caption, $width, $height, $displayOrder);
 
 if ($stmt->execute()) {
     $newId = $stmt->insert_id;
@@ -83,6 +92,10 @@ if ($stmt->execute()) {
     jsonResponse(201, 'success', [
         'id'       => (int) $newId,
         'imageUrl' => $imageUrl,
+        'title'    => $titleText,
+        'caption'  => $caption,
+        'width'    => $width,
+        'height'   => $height,
     ], 'Image uploaded successfully.');
 } else {
     // Clean up file if DB insert fails

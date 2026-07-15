@@ -8,7 +8,7 @@ if (getRequestMethod() !== 'DELETE') {
     jsonResponse(405, 'error', null, 'Method not allowed. Use DELETE.');
 }
 
-$auth = requireAuth();
+requireRole(['admin', 'manager']);
 $input = getJsonInput();
 
 $id = (int) ($input['id'] ?? 0);

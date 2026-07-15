@@ -28,6 +28,10 @@ if (!empty($_SERVER['PATH_INFO'])) {
 $apiDir = __DIR__ . '/../api';
 
 $routes = [
+    // Search engine files
+    '/robots.txt'            => $apiDir . '/robots/get.php',
+    '/sitemap.xml'           => $apiDir . '/sitemap/generate.php',
+
     // Auth
     '/api/auth/login'        => $apiDir . '/auth/login.php',
     '/api/auth/verify'       => $apiDir . '/auth/verify.php',
@@ -43,6 +47,30 @@ $routes = [
     '/api/pages/create'      => $apiDir . '/pages/create.php',
     '/api/pages/update'      => $apiDir . '/pages/update.php',
     '/api/pages/delete'      => $apiDir . '/pages/delete.php',
+
+    // Backend SEO
+    '/api/seo-settings/get'    => $apiDir . '/seo-settings/get.php',
+    '/api/seo-settings/update' => $apiDir . '/seo-settings/update.php',
+    '/api/faqs/list'           => $apiDir . '/faqs/list.php',
+    '/api/faqs/create'         => $apiDir . '/faqs/create.php',
+    '/api/faqs/update'         => $apiDir . '/faqs/update.php',
+    '/api/faqs/delete'         => $apiDir . '/faqs/delete.php',
+    '/api/redirects/list'      => $apiDir . '/redirects/list.php',
+    '/api/redirects/create'    => $apiDir . '/redirects/create.php',
+    '/api/redirects/update'    => $apiDir . '/redirects/update.php',
+    '/api/redirects/delete'    => $apiDir . '/redirects/delete.php',
+    '/api/redirects/resolve'   => $apiDir . '/redirects/resolve.php',
+    '/api/robots/get'          => $apiDir . '/robots/get.php',
+    '/api/robots/update'       => $apiDir . '/robots/update.php',
+    '/api/sitemap/generate'    => $apiDir . '/sitemap/generate.php',
+    '/api/schemas/list'        => $apiDir . '/schemas/list.php',
+    '/api/schemas/create'      => $apiDir . '/schemas/create.php',
+    '/api/schemas/update'      => $apiDir . '/schemas/update.php',
+    '/api/schemas/delete'      => $apiDir . '/schemas/delete.php',
+    '/api/reviews/settings'    => $apiDir . '/reviews/settings.php',
+    '/api/reviews/update-settings' => $apiDir . '/reviews/update-settings.php',
+    '/api/breadcrumbs/generate' => $apiDir . '/breadcrumbs/generate.php',
+    '/api/seo-validation/check' => $apiDir . '/seo-validation/check.php',
 
     // Package Categories
     '/api/package-categories/list'   => $apiDir . '/package-categories/list.php',
@@ -103,5 +131,25 @@ $routes = [
 if (isset($routes[$route])) {
     require_once $routes[$route];
 } else {
+    $sourcePath = '/' . ltrim($route, '/');
+    $redirect = $conn->prepare("SELECT target_url, status_code FROM seo_redirects WHERE source_path = ? AND is_active = 1 LIMIT 1");
+    if ($redirect) {
+        $redirect->bind_param('s', $sourcePath);
+        $redirect->execute();
+        $redirectResult = $redirect->get_result();
+        $redirectRow = $redirectResult->fetch_assoc();
+        $redirect->close();
+
+        if ($redirectRow) {
+            $statusCode = (int) $redirectRow['status_code'];
+            if (!in_array($statusCode, [301, 302, 307, 308], true)) {
+                $statusCode = 301;
+            }
+
+            header('Location: ' . $redirectRow['target_url'], true, $statusCode);
+            exit;
+        }
+    }
+
     jsonResponse(404, 'error', null, 'Endpoint not found.');
 }

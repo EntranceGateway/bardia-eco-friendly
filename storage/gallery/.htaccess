@@ -2,4 +2,8 @@
 Options -Indexes
 <FilesMatch "\.(jpg|jpeg|png|webp|gif)$">
     Require all granted
+    <IfModule mod_headers.c>
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header set X-Content-Type-Options "nosniff"
+    </IfModule>
 </FilesMatch>

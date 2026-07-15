@@ -20,6 +20,10 @@ USE `bardiya_eco_friendly`;
 -- 2. USERS TABLE (Admin Authentication / JWT Auth)
 -- ============================================================
 DROP TABLE IF EXISTS `homestays`;
+DROP TABLE IF EXISTS `seo_redirects`;
+DROP TABLE IF EXISTS `seo_schemas`;
+DROP TABLE IF EXISTS `faqs`;
+DROP TABLE IF EXISTS `seo_settings`;
 DROP TABLE IF EXISTS `pages`;
 DROP TABLE IF EXISTS `users`;
 
@@ -68,12 +72,22 @@ CREATE TABLE `pages` (
     `title`      VARCHAR(255)   NOT NULL,
     `slug`       VARCHAR(255)   NOT NULL,
     `content`    LONGTEXT       DEFAULT NULL,
+    `meta_title` VARCHAR(255)   DEFAULT NULL,
+    `meta_description` VARCHAR(500) DEFAULT NULL,
+    `meta_image` VARCHAR(500)   DEFAULT NULL,
+    `canonical_url` VARCHAR(500) DEFAULT NULL,
+    `robots`     VARCHAR(50)    NOT NULL DEFAULT 'index,follow',
+    `language_code` VARCHAR(10) NOT NULL DEFAULT 'en',
+    `translation_group` VARCHAR(100) DEFAULT NULL,
+    `hreflang_url` VARCHAR(500) DEFAULT NULL,
     `status`     VARCHAR(50)    NOT NULL DEFAULT 'draft' COMMENT 'draft|published|archived',
     `created_at` DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     UNIQUE KEY `uk_pages_slug` (`slug`),
+    UNIQUE KEY `uk_pages_lang_group` (`translation_group`, `language_code`),
     INDEX `idx_pages_status` (`status`),
+    INDEX `idx_pages_language` (`language_code`),
     INDEX `idx_pages_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='CMS content pages';
@@ -91,9 +105,9 @@ INSERT INTO `homestays` (`name`, `description`, `location`, `price_per_night`, `
 ('Bardiya Jungle Lodge', 'An eco-friendly lodge nestled at the edge of Bardiya National Park.', 'Thakurdwara, Bardiya', 2500.00, 4, NULL, 1),
 ('Tharu Heritage Homestay', 'Experience authentic Tharu culture in a traditional mud-walled home.', 'Gulariya, Bardiya', 1500.00, 3, NULL, 1);
 
-INSERT INTO `pages` (`title`, `slug`, `content`, `status`) VALUES
-('About Us', 'about-us', '<h2>Welcome to Bardiya Eco Friendly</h2>', 'published'),
-('Contact Us', 'contact-us', '<h2>Get in Touch</h2>', 'published');
+INSERT INTO `pages` (`title`, `slug`, `content`, `meta_title`, `meta_description`, `meta_image`, `canonical_url`, `robots`, `status`) VALUES
+('About Us', 'about-us', '<h2>Welcome to Bardiya Eco Friendly</h2>', NULL, NULL, NULL, NULL, 'index,follow', 'published'),
+('Contact Us', 'contact-us', '<h2>Get in Touch</h2>', 'Contact Bardia Eco-Friendly Homestay', 'Contact Bardia Eco-Friendly Homestay to plan your stay, ask about safari packages, or request travel information.', '/logo.png', 'https://www.bardiaecofriendlyhomestay.com/contact', 'index,follow', 'published');
 
 -- ============================================================
 -- 7. PACKAGE CATEGORIES TABLE
@@ -181,6 +195,10 @@ CREATE TABLE `gallery_images` (
     `category_id`   BIGINT         NOT NULL,
     `image_url`     VARCHAR(500)   NOT NULL,
     `alt_text`      VARCHAR(255)   DEFAULT NULL,
+    `title_text`    VARCHAR(255)   DEFAULT NULL,
+    `caption`       VARCHAR(500)   DEFAULT NULL,
+    `width`         INT UNSIGNED   DEFAULT NULL,
+    `height`        INT UNSIGNED   DEFAULT NULL,
     `display_order` INT            NOT NULL DEFAULT 0,
     `is_active`     TINYINT(1)     NOT NULL DEFAULT 1,
     `created_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -193,7 +211,62 @@ INSERT INTO `gallery_categories` (`name`, `slug`, `display_order`, `is_active`) 
 ('Wildlife', 'wildlife', 2, 1);
 
 -- ============================================================
--- 12. CONTACT METHODS TABLE
+-- 12. SEO SETTINGS / REDIRECTS / FAQ / SCHEMA
+-- ============================================================
+CREATE TABLE `seo_settings` (
+    `setting_key`   VARCHAR(100)   NOT NULL PRIMARY KEY,
+    `setting_value` LONGTEXT       DEFAULT NULL,
+    `updated_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `seo_settings` (`setting_key`, `setting_value`) VALUES
+('site_name', 'Bardia Eco-Friendly Homestay'),
+('default_title', 'Bardia Eco-Friendly Homestay'),
+('default_description', 'Stay near Bardia National Park at an eco-friendly homestay offering wildlife safaris, local food, and responsible travel experiences.'),
+('default_image', '/logo.png'),
+('robots_txt', 'User-agent: *\nAllow: /\n\nSitemap: https://www.bardiaecofriendlyhomestay.com/sitemap.xml'),
+('google_reviews_enabled', '1'),
+('google_reviews_provider', 'elfsight'),
+('aggregate_rating_value', '5.0'),
+('aggregate_rating_count', '120');
+
+CREATE TABLE `seo_redirects` (
+    `id`            BIGINT         AUTO_INCREMENT PRIMARY KEY,
+    `source_path`   VARCHAR(500)   NOT NULL,
+    `target_url`    VARCHAR(500)   NOT NULL,
+    `status_code`   SMALLINT       NOT NULL DEFAULT 301,
+    `is_active`     TINYINT(1)     NOT NULL DEFAULT 1,
+    `created_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_redirect_source` (`source_path`),
+    INDEX `idx_redirect_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `faqs` (
+    `id`            BIGINT         AUTO_INCREMENT PRIMARY KEY,
+    `page_slug`     VARCHAR(255)   NOT NULL,
+    `question`      VARCHAR(500)   NOT NULL,
+    `answer`        TEXT           NOT NULL,
+    `display_order` INT            NOT NULL DEFAULT 0,
+    `is_active`     TINYINT(1)     NOT NULL DEFAULT 1,
+    `created_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_faq_page` (`page_slug`, `is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `seo_schemas` (
+    `id`            BIGINT         AUTO_INCREMENT PRIMARY KEY,
+    `page_slug`     VARCHAR(255)   NOT NULL,
+    `schema_type`   VARCHAR(100)   NOT NULL,
+    `schema_json`   LONGTEXT       NOT NULL,
+    `is_active`     TINYINT(1)     NOT NULL DEFAULT 1,
+    `created_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_schema_page` (`page_slug`, `is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- 13. CONTACT METHODS TABLE
 -- ============================================================
 DROP TABLE IF EXISTS `email_history`;
 DROP TABLE IF EXISTS `contact_submissions`;

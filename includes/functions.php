@@ -10,6 +10,8 @@ function jsonResponse(int $statusCode, string $status, $data = null, string $mes
 {
     http_response_code($statusCode);
     header('Content-Type: application/json; charset=utf-8');
+    header('X-Robots-Tag: noindex, nofollow', true);
+    header('Cache-Control: no-store, max-age=0', true);
 
     $response = ['status' => $status];
 
@@ -33,6 +35,24 @@ function sanitize(string $input): string
     return htmlspecialchars(strip_tags(trim($input)), ENT_QUOTES, 'UTF-8');
 }
 
+function slugify(string $input): string
+{
+    $slug = strtolower(trim($input));
+    $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+    $slug = trim($slug, '-');
+    return $slug ?: 'page';
+}
+
+function frontend_url(string $path = ''): string
+{
+    $frontendUrl = rtrim($_ENV['FRONTEND_URL'] ?? 'https://www.bardiaecofriendlyhomestay.com', '/');
+    if ($path === '') {
+        return $frontendUrl;
+    }
+
+    return $frontendUrl . '/' . ltrim($path, '/');
+}
+
 /**
  * Get JSON input from request body
  */
@@ -53,9 +73,13 @@ function getJsonInput(): array
  */
 function setCorsHeaders(): void
 {
-    header('Access-Control-Allow-Origin: *');
+    $allowedOrigin = $_ENV['FRONTEND_URL'] ?? 'https://www.bardiaecofriendlyhomestay.com';
+    header('Access-Control-Allow-Origin: ' . $allowedOrigin);
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Vary: Origin');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
 
     // Handle preflight requests
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -106,4 +130,3 @@ function asset_url(string $path): string
     // Combine base URL with the asset path
     return $baseUrl . $path;
 }
-

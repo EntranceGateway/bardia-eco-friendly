@@ -12,15 +12,12 @@ $auth  = requireAuth();
 $input = getJsonInput();
 
 $name         = sanitize($input['name']          ?? '');
-$slug         = sanitize($input['slug']          ?? '');
+$slug         = slugify($input['slug']          ?? $name);
 $displayOrder = (int) ($input['display_order']   ?? 0);
 $isActive     = isset($input['is_active']) ? (int)(bool)$input['is_active'] : 1;
 
 if (empty($name)) {
     jsonResponse(400, 'error', null, 'Category name is required.');
-}
-if (empty($slug)) {
-    jsonResponse(400, 'error', null, 'Category slug is required.');
 }
 
 // Check slug uniqueness

@@ -1,0 +1,3 @@
+ALTER TABLE `gallery_images`
+    ADD COLUMN `width` INT UNSIGNED DEFAULT NULL AFTER `alt_text`,
+    ADD COLUMN `height` INT UNSIGNED DEFAULT NULL AFTER `width`;

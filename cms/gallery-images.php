@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'upload') {
         $categoryId = (int) ($_POST['category_id'] ?? 0);
         $files      = $_FILES['images'] ?? null;
-        $maxBytes   = 50 * 1024 * 1024; // 5MB
+        $maxBytes   = 5 * 1024 * 1024; // 5MB
         $allowed    = ['image/jpeg', 'image/png', 'image/webp'];
 
         if ($categoryId <= 0) { $error = 'Please select a category.'; }
@@ -74,6 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif (!in_array($mimeType, $allowed, true)) {
                     $errors[] = "File '{$file['name']}' is an invalid type. Use JPG, PNG or WebP.";
                 } else {
+                    $imageSize = getimagesize($file['tmp_name']);
+                    if ($imageSize === false) {
+                        $errors[] = "File '{$file['name']}' is not a valid image.";
+                        continue;
+                    }
+                    $width  = (int) $imageSize[0];
+                    $height = (int) $imageSize[1];
                     $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
                     $filename = time() . '_' . $i . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
                     $uploadDir = __DIR__ . '/../storage/gallery/';
@@ -82,11 +89,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
                         $imageUrl = '/storage/gallery/' . $filename;
                         $altText  = trim($_POST['alt_text'] ?? '');
+                        $titleText = trim($_POST['title_text'] ?? '');
+                        $caption = trim($_POST['caption'] ?? '');
                         $order    = (int) ($_POST['display_order'] ?? 0);
-                        
                         try {
-                            $stmt = $conn->prepare("INSERT INTO gallery_images (category_id, image_url, alt_text, display_order) VALUES (?, ?, ?, ?)");
-                            $stmt->bind_param('issi', $categoryId, $imageUrl, $altText, $order);
+                            $stmt = $conn->prepare("INSERT INTO gallery_images (category_id, image_url, alt_text, title_text, caption, width, height, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->bind_param('issssiii', $categoryId, $imageUrl, $altText, $titleText, $caption, $width, $height, $order);
                             if ($stmt->execute()) {
                                 $uploadedCount++;
                             } else {
@@ -112,6 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id         = (int) ($_POST['id'] ?? 0);
             $categoryId = (int) ($_POST['category_id'] ?? 0);
             $altText    = trim($_POST['alt_text'] ?? '');
+            $titleText  = trim($_POST['title_text'] ?? '');
+            $caption    = trim($_POST['caption'] ?? '');
             $order      = (int) ($_POST['display_order'] ?? 0);
             $isActive   = isset($_POST['is_active']) ? 1 : 0;
             $newFile    = $_FILES['new_image'] ?? null;
@@ -130,32 +140,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($newFile['size'] > $maxBytes) { $error = 'Image is too large (max 5MB).'; }
                     elseif (!in_array($mimeType, $allowed, true)) { $error = 'Invalid file type.'; }
                     else {
+                        $imageSize = getimagesize($newFile['tmp_name']);
+                        if ($imageSize === false) {
+                            $error = 'Uploaded file is not a valid image.';
+                        }
+                    }
+
+                    if (!$error) {
                         $old = $conn->prepare("SELECT image_url FROM gallery_images WHERE id = ?");
                         $old->bind_param('i', $id); $old->execute();
                         $oldRes = $old->get_result()->fetch_assoc();
                         $old->close();
+                        $width  = (int) $imageSize[0];
+                        $height = (int) $imageSize[1];
 
                         $ext      = pathinfo($newFile['name'], PATHINFO_EXTENSION);
                         $filename = time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
                         if (move_uploaded_file($newFile['tmp_name'], __DIR__ . '/../storage/gallery/' . $filename)) {
                             $newUrl = '/storage/gallery/' . $filename;
-                            $updFile = $conn->prepare("UPDATE gallery_images SET image_url = ? WHERE id = ?");
-                            $updFile->bind_param('si', $newUrl, $id);
+                            $updFile = $conn->prepare("UPDATE gallery_images SET image_url = ?, width = ?, height = ? WHERE id = ?");
+                            $updFile->bind_param('siii', $newUrl, $width, $height, $id);
                             if ($updFile->execute()) {
                                 if ($oldRes) {
                                     $oldFilename = basename($oldRes['image_url']);
                                     $oldPath = __DIR__ . '/../storage/gallery/' . $oldFilename;
                                     if (file_exists($oldPath)) @unlink($oldPath);
                                 }
+                            } else {
+                                @unlink(__DIR__ . '/../storage/gallery/' . $filename);
+                                $error = 'Image replacement failed.';
                             }
                             $updFile->close();
+                        } else {
+                            $error = 'Failed to move replacement image to storage.';
                         }
                     }
                 }
 
                 if (!$error) {
-                    $stmt = $conn->prepare("UPDATE gallery_images SET category_id = ?, alt_text = ?, display_order = ?, is_active = ? WHERE id = ?");
-                    $stmt->bind_param('isiii', $categoryId, $altText, $order, $isActive, $id);
+                    $stmt = $conn->prepare("UPDATE gallery_images SET category_id = ?, alt_text = ?, title_text = ?, caption = ?, display_order = ?, is_active = ? WHERE id = ?");
+                    $stmt->bind_param('isssiii', $categoryId, $altText, $titleText, $caption, $order, $isActive, $id);
                     if ($stmt->execute()) {
                         $conn->commit();
                         $success = 'Image updated.';
@@ -191,7 +215,7 @@ try {
 // ---------- Optional filter by category ----------
 $filterCat = (int) ($_GET['category_id'] ?? 0);
 
-$imgSql = "SELECT gi.id, gi.category_id, gi.image_url, gi.alt_text, gi.display_order, gi.is_active,
+$imgSql = "SELECT gi.id, gi.category_id, gi.image_url, gi.alt_text, gi.title_text, gi.caption, gi.width, gi.height, gi.display_order, gi.is_active,
                   gc.name AS category_name
            FROM gallery_images gi
            LEFT JOIN gallery_categories gc ON gi.category_id = gc.id";
@@ -207,6 +231,8 @@ try {
         $r['category_id']   = (int)  $r['category_id'];
         $r['display_order'] = (int)  $r['display_order'];
         $r['is_active']     = (bool) $r['is_active'];
+        $r['width']         = $r['width'] !== null ? (int) $r['width'] : null;
+        $r['height']        = $r['height'] !== null ? (int) $r['height'] : null;
         $images[] = $r;
     }
 } catch (RuntimeException $e) {
@@ -242,9 +268,17 @@ try {
                     <input type="text" class="form-control" id="upAlt" name="alt_text" placeholder="Tiger in the grass">
                 </div>
                 <div class="form-group">
+                    <label for="upTitle">Image Title</label>
+                    <input type="text" class="form-control" id="upTitle" name="title_text" placeholder="Royal Bengal tiger">
+                </div>
+                <div class="form-group">
                     <label for="upOrder">Display Order</label>
                     <input type="number" class="form-control" id="upOrder" name="display_order" value="0" min="0">
                 </div>
+            </div>
+            <div class="form-group">
+                <label for="upCaption">Caption</label>
+                <input type="text" class="form-control" id="upCaption" name="caption" placeholder="Wildlife sighting near Bardia National Park">
             </div>
             <div class="form-group">
                 <label for="upFile">Select Images <span style="color:red">*</span></label>
@@ -277,7 +311,7 @@ try {
     <div class="tbl-wrap">
         <table>
             <thead>
-                <tr><th style="width:70px;">Preview</th><th>Category</th><th>Alt Text</th><th>Order</th><th>Active</th><th>Actions</th></tr>
+                <tr><th style="width:70px;">Preview</th><th>Category</th><th>Alt Text</th><th>Title</th><th>Order</th><th>Active</th><th>Actions</th></tr>
             </thead>
             <tbody>
             <?php foreach ($images as $img): ?>
@@ -289,6 +323,7 @@ try {
                     </td>
                     <td><?= htmlspecialchars($img['category_name'] ?? '—') ?></td>
                     <td><?= htmlspecialchars($img['alt_text'] ?? '—') ?></td>
+                    <td><?= htmlspecialchars($img['title_text'] ?? '—') ?></td>
                     <td><?= $img['display_order'] ?></td>
                     <td><?= $img['is_active'] ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Inactive</span>' ?></td>
                     <td>
@@ -302,7 +337,7 @@ try {
                 </tr>
             <?php endforeach; ?>
             <?php if (empty($images)): ?>
-                <tr><td colspan="6" style="color:#6b7280;text-align:center;">No images yet.</td></tr>
+                <tr><td colspan="7" style="color:#6b7280;text-align:center;">No images yet.</td></tr>
             <?php endif; ?>
             </tbody>
         </table>
@@ -316,6 +351,7 @@ try {
             <div style="flex:1;">
                 <div class="m-title"><?= htmlspecialchars($img['alt_text'] ?: 'No alt text') ?></div>
                 <div class="m-row"><span>Category</span><span><?= htmlspecialchars($img['category_name'] ?? '—') ?></span></div>
+                <div class="m-row"><span>Title</span><span><?= htmlspecialchars($img['title_text'] ?? '—') ?></span></div>
                 <div class="m-row"><span>Active</span><span><?= $img['is_active'] ? 'Yes' : 'No' ?></span></div>
                 <div class="m-actions">
                     <button class="btn btn-secondary btn-sm" onclick='openEdit(<?= htmlspecialchars(json_encode($img), ENT_QUOTES) ?>)'>Edit</button>
@@ -351,6 +387,14 @@ try {
                 <input type="text" class="form-control" id="eAlt" name="alt_text">
             </div>
             <div class="form-group">
+                <label for="eTitle">Image Title</label>
+                <input type="text" class="form-control" id="eTitle" name="title_text">
+            </div>
+            <div class="form-group">
+                <label for="eCaption">Caption</label>
+                <input type="text" class="form-control" id="eCaption" name="caption">
+            </div>
+            <div class="form-group">
                 <label for="eFile">Replace Image (optional)</label>
                 <input type="file" class="form-control" id="eFile" name="new_image"
                        accept="image/jpeg,image/png,image/webp">
@@ -382,6 +426,8 @@ function openEdit(img) {
     document.getElementById('eId').value    = img.id;
     document.getElementById('eCat').value   = img.category_id;
     document.getElementById('eAlt').value   = img.alt_text || '';
+    document.getElementById('eTitle').value = img.title_text || '';
+    document.getElementById('eCaption').value = img.caption || '';
     document.getElementById('eOrder').value = img.display_order || 0;
     document.getElementById('eActive').checked = !!img.is_active;
 }
