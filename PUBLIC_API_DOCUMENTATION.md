@@ -12,12 +12,14 @@ This documentation covers the public-facing API endpoints for integrating the Ba
 2. [Package Categories](#package-categories)
 3. [Packages](#packages)
 4. [Gallery](#gallery)
-5. [Contact Methods](#contact-methods)
-6. [Social Links](#social-links)
-7. [Contact Submissions](#contact-submissions)
-8. [Pages](#pages)
-9. [Response Format](#response-format)
-10. [Error Handling](#error-handling)
+5. [Blog Categories](#blog-categories)
+6. [Blog Posts](#blog-posts)
+7. [Contact Methods](#contact-methods)
+8. [Social Links](#social-links)
+9. [Contact Submissions](#contact-submissions)
+10. [Pages](#pages)
+11. [Response Format](#response-format)
+12. [Error Handling](#error-handling)
 
 ---
 
@@ -268,6 +270,187 @@ fetch('https://api.bardiaecofriendlyhomestay.com/api/gallery-images/list?categor
     });
   });
 </script>
+```
+
+---
+
+## 📝 Blog Categories
+
+### List Blog Categories
+
+Get all blog categories with post counts.
+
+**Endpoint**: `GET /api/blog-categories/list`
+
+**Authentication**: Not required (Public)
+
+**Response**:
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "Wildlife & Conservation",
+      "slug": "wildlife-conservation",
+      "description": "Articles about Bardiya National Park wildlife...",
+      "display_order": 1,
+      "is_active": true,
+      "post_count": 5,
+      "created_at": "2026-07-01 10:00:00",
+      "updated_at": "2026-07-01 10:00:00"
+    }
+  ]
+}
+```
+
+**Example Request**:
+```javascript
+fetch('https://api.bardiaecofriendlyhomestay.com/api/blog-categories/list')
+  .then(response => response.json())
+  .then(data => console.log(data));
+```
+
+---
+
+## 📰 Blog Posts
+
+### List Blog Posts (Paginated)
+
+Get published blog posts with pagination and optional filters.
+
+**Endpoint**: `GET /api/blog-posts/list`
+
+**Authentication**: Not required (Public)
+
+**Query Parameters**:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | int | 1 | Page number |
+| `per_page` | int | 10 | Posts per page (max 50) |
+| `category_id` | int | — | Filter by category ID |
+| `status` | string | published | Filter by status (draft/published/archived) |
+| `is_featured` | int | — | Filter featured posts (1 or 0) |
+
+**Response**:
+```json
+{
+  "status": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "category_id": 1,
+        "title": "Spotting the Royal Bengal Tiger in Bardiya",
+        "slug": "spotting-royal-bengal-tiger-bardiya",
+        "excerpt": "Bardiya National Park is one of the best places...",
+        "featured_image": "/storage/blog/1720000000_tiger.jpg",
+        "featured_image_url": "https://api.bardiaecofriendlyhomestay.com/storage/blog/1720000000_tiger.jpg",
+        "featured_image_alt": "Royal Bengal Tiger in Bardiya",
+        "author_name": "Bardiya Eco Team",
+        "meta_title": "Spotting the Royal Bengal Tiger...",
+        "meta_description": "Discover tips for spotting Royal Bengal Tigers...",
+        "is_featured": true,
+        "status": "published",
+        "published_at": "2026-07-01 10:00:00",
+        "display_order": 1,
+        "is_active": true,
+        "created_at": "2026-07-01 10:00:00",
+        "updated_at": "2026-07-01 10:00:00",
+        "category_name": "Wildlife & Conservation",
+        "category_slug": "wildlife-conservation"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "per_page": 10,
+      "total": 25,
+      "pages": 3
+    }
+  }
+}
+```
+
+**Example Requests**:
+```javascript
+// Get all published posts (page 1)
+fetch('https://api.bardiaecofriendlyhomestay.com/api/blog-posts/list')
+  .then(res => res.json())
+  .then(data => console.log(data));
+
+// Get page 2 with 6 posts per page
+fetch('https://api.bardiaecofriendlyhomestay.com/api/blog-posts/list?page=2&per_page=6')
+  .then(res => res.json())
+  .then(data => console.log(data));
+
+// Get featured posts only
+fetch('https://api.bardiaecofriendlyhomestay.com/api/blog-posts/list?is_featured=1')
+  .then(res => res.json())
+  .then(data => console.log(data));
+
+// Filter by category
+fetch('https://api.bardiaecofriendlyhomestay.com/api/blog-posts/list?category_id=1')
+  .then(res => res.json())
+  .then(data => console.log(data));
+```
+
+### Get Single Blog Post
+
+Get a single blog post by its slug with full content and related posts.
+
+**Endpoint**: `GET /api/blog-posts/get?slug={slug}`
+
+**Authentication**: Not required (Public)
+
+**Query Parameters**:
+- `slug` (required): The URL slug of the blog post
+
+**Response**:
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "category_id": 1,
+    "title": "Spotting the Royal Bengal Tiger in Bardiya",
+    "slug": "spotting-royal-bengal-tiger-bardiya",
+    "excerpt": "Bardiya National Park is one of the best places...",
+    "content": "<h2>The Thrill of Tiger Spotting</h2><p>Bardiya National Park...</p>",
+    "featured_image": "/storage/blog/1720000000_tiger.jpg",
+    "featured_image_url": "https://api.bardiaecofriendlyhomestay.com/storage/blog/1720000000_tiger.jpg",
+    "featured_image_alt": "Royal Bengal Tiger in Bardiya",
+    "author_name": "Bardiya Eco Team",
+    "meta_title": "Spotting the Royal Bengal Tiger in Bardiya National Park",
+    "meta_description": "Discover tips for spotting Royal Bengal Tigers...",
+    "meta_image": "/storage/blog/1720000000_tiger.jpg",
+    "canonical_url": "https://www.bardiaecofriendlyhomestay.com/blog/spotting-royal-bengal-tiger-bardiya",
+    "robots": "index,follow",
+    "is_featured": true,
+    "status": "published",
+    "published_at": "2026-07-01 10:00:00",
+    "category_name": "Wildlife & Conservation",
+    "category_slug": "wildlife-conservation",
+    "related_posts": [
+      {
+        "id": 3,
+        "title": "Elephant Safari Experience",
+        "slug": "elephant-safari-experience",
+        "excerpt": "Explore the jungle on elephant-back...",
+        "featured_image": "/storage/blog/1720001000_elephant.jpg",
+        "featured_image_url": "https://api.bardiaecofriendlyhomestay.com/storage/blog/1720001000_elephant.jpg",
+        "published_at": "2026-06-15 08:00:00",
+        "category_name": "Wildlife & Conservation"
+      }
+    ]
+  }
+}
+```
+
+**Example Request**:
+```javascript
+fetch('https://api.bardiaecofriendlyhomestay.com/api/blog-posts/get?slug=spotting-royal-bengal-tiger-bardiya')
+  .then(res => res.json())
+  .then(data => console.log(data));
 ```
 
 ---
@@ -723,6 +906,6 @@ For API support or questions, contact:
 
 ---
 
-**API Version**: 1.0  
-**Last Updated**: March 2026  
+**API Version**: 1.1  
+**Last Updated**: July 2026  
 **Base URL**: https://api.bardiaecofriendlyhomestay.com

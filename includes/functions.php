@@ -74,7 +74,23 @@ function getJsonInput(): array
 function setCorsHeaders(): void
 {
     $allowedOrigin = $_ENV['FRONTEND_URL'] ?? 'https://www.bardiaecofriendlyhomestay.com';
-    header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+    
+    // Support local development and production (www and non-www)
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowedOrigins = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://www.bardiaecofriendlyhomestay.com',
+        'https://bardiaecofriendlyhomestay.com',
+        $allowedOrigin
+    ];
+    
+    if (in_array($origin, $allowedOrigins, true)) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+    } else {
+        header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+    }
+    
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
     header('Vary: Origin');

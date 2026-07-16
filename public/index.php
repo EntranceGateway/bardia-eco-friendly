@@ -125,6 +125,19 @@ $routes = [
     // Email Templates
     '/api/email-templates/list' => $apiDir . '/email-templates/list.php',
     '/api/email-templates/get'  => $apiDir . '/email-templates/get.php',
+
+    // Blog Categories
+    '/api/blog-categories/list'   => $apiDir . '/blog-categories/list.php',
+    '/api/blog-categories/create' => $apiDir . '/blog-categories/create.php',
+    '/api/blog-categories/update' => $apiDir . '/blog-categories/update.php',
+    '/api/blog-categories/delete' => $apiDir . '/blog-categories/delete.php',
+
+    // Blog Posts
+    '/api/blog-posts/list'   => $apiDir . '/blog-posts/list.php',
+    '/api/blog-posts/get'    => $apiDir . '/blog-posts/get.php',
+    '/api/blog-posts/create' => $apiDir . '/blog-posts/create.php',
+    '/api/blog-posts/update' => $apiDir . '/blog-posts/update.php',
+    '/api/blog-posts/delete' => $apiDir . '/blog-posts/delete.php',
 ];
 
 // Match route

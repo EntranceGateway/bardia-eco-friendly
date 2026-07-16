@@ -52,6 +52,27 @@ if ($result) {
     }
 }
 
+// ── Published blog posts ──────────────────────────────────────────────────
+$blogResult = $conn->query(
+    "SELECT slug, published_at, updated_at
+     FROM blog_posts
+     WHERE status = 'published' AND is_active = 1 AND robots NOT LIKE 'noindex%'
+     ORDER BY published_at DESC"
+);
+if ($blogResult) {
+    while ($row = $blogResult->fetch_assoc()) {
+        $lastmod = $row['updated_at'] ? substr($row['updated_at'], 0, 10)
+                 : ($row['published_at'] ? substr($row['published_at'], 0, 10) : date('Y-m-d'));
+        $urls[] = [
+            'loc'        => frontend_url('/blog/' . trim($row['slug'], '/')),
+            'priority'   => '0.6',
+            'changefreq' => 'monthly',
+            'lastmod'    => $lastmod,
+            'alternates' => [],
+        ];
+    }
+}
+
 header('Content-Type: application/xml; charset=utf-8');
 header('Cache-Control: public, max-age=3600');
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
