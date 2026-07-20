@@ -92,9 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $titleText = trim($_POST['title_text'] ?? '');
                         $caption = trim($_POST['caption'] ?? '');
                         $order    = (int) ($_POST['display_order'] ?? 0);
+                        
+                        $slug = strtolower(preg_replace('/[^a-z0-9-]/', '-', $titleText));
+                        
                         try {
-                            $stmt = $conn->prepare("INSERT INTO gallery_images (category_id, image_url, alt_text, title_text, caption, width, height, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                            $stmt->bind_param('issssiii', $categoryId, $imageUrl, $altText, $titleText, $caption, $width, $height, $order);
+                            $stmt = $conn->prepare("INSERT INTO gallery_images (category_id, image_url, slug, alt_text, title_text, caption, width, height, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->bind_param('isssssiii', $categoryId, $imageUrl, $slug, $altText, $titleText, $caption, $width, $height, $order);
                             if ($stmt->execute()) {
                                 $uploadedCount++;
                             } else {
@@ -125,6 +128,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $order      = (int) ($_POST['display_order'] ?? 0);
             $isActive   = isset($_POST['is_active']) ? 1 : 0;
             $newFile    = $_FILES['new_image'] ?? null;
+            
+            $slug         = trim($_POST['slug']          ?? '');
+            if (empty($slug)) { $slug = strtolower(preg_replace('/[^a-z0-9-]/', '-', $titleText)); }
+            $metaTitle    = trim($_POST['meta_title']    ?? '');
+            $metaDesc     = trim($_POST['meta_description'] ?? '');
+            $metaKeywords = trim($_POST['meta_keywords'] ?? '');
+            $metaImage    = trim($_POST['meta_image']    ?? '');
+            $canonicalUrl = trim($_POST['canonical_url'] ?? '');
+            $robots       = trim($_POST['robots']        ?? 'index,follow');
 
             if ($id <= 0) { $error = 'Invalid image ID.'; }
             else {
@@ -178,8 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 if (!$error) {
-                    $stmt = $conn->prepare("UPDATE gallery_images SET category_id = ?, alt_text = ?, title_text = ?, caption = ?, display_order = ?, is_active = ? WHERE id = ?");
-                    $stmt->bind_param('isssiii', $categoryId, $altText, $titleText, $caption, $order, $isActive, $id);
+                    $stmt = $conn->prepare("UPDATE gallery_images SET category_id = ?, slug = ?, alt_text = ?, title_text = ?, caption = ?, display_order = ?, is_active = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, meta_image = ?, canonical_url = ?, robots = ? WHERE id = ?");
+                    $stmt->bind_param('issssiiissssssi', $categoryId, $slug, $altText, $titleText, $caption, $order, $isActive, $metaTitle, $metaDesc, $metaKeywords, $metaImage, $canonicalUrl, $robots, $id);
                     if ($stmt->execute()) {
                         $conn->commit();
                         $success = 'Image updated.';
@@ -215,7 +227,7 @@ try {
 // ---------- Optional filter by category ----------
 $filterCat = (int) ($_GET['category_id'] ?? 0);
 
-$imgSql = "SELECT gi.id, gi.category_id, gi.image_url, gi.alt_text, gi.title_text, gi.caption, gi.width, gi.height, gi.display_order, gi.is_active,
+$imgSql = "SELECT gi.id, gi.category_id, gi.image_url, gi.slug, gi.alt_text, gi.title_text, gi.caption, gi.width, gi.height, gi.display_order, gi.is_active, gi.meta_title, gi.meta_description, gi.meta_keywords, gi.meta_image, gi.canonical_url, gi.robots,
                   gc.name AS category_name
            FROM gallery_images gi
            LEFT JOIN gallery_categories gc ON gi.category_id = gc.id";
@@ -412,6 +424,43 @@ try {
                     </div>
                 </div>
             </div>
+            
+            <hr style="margin:20px 0; border:0; border-top:1px solid var(--border);">
+            <h4 style="margin-bottom:12px; font-size:0.95rem; color:var(--brand-dk);">SEO Settings</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="eSlug">URL Slug (Auto-generated if empty)</label>
+                    <input type="text" class="form-control" id="eSlug" name="slug" pattern="[a-z0-9\-]+">
+                </div>
+                <div class="form-group">
+                    <label for="eMetaTitle">Meta Title</label>
+                    <input type="text" class="form-control" id="eMetaTitle" name="meta_title">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="eMetaDesc">Meta Description</label>
+                <textarea class="form-control" id="eMetaDesc" name="meta_description" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="eMetaKeywords">Meta Keywords</label>
+                <input type="text" class="form-control" id="eMetaKeywords" name="meta_keywords" placeholder="safari, wildlife, homestay">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="eMetaImage">Meta Image URL</label>
+                    <input type="text" class="form-control" id="eMetaImage" name="meta_image">
+                </div>
+                <div class="form-group">
+                    <label for="eCanonical">Canonical URL</label>
+                    <input type="url" class="form-control" id="eCanonical" name="canonical_url">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="eRobots">Robots</label>
+                <input type="text" class="form-control" id="eRobots" name="robots" value="index,follow">
+            </div>
+            <hr style="margin:20px 0; border:0; border-top:1px solid var(--border);">
+            
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeEdit()">Cancel</button>
                 <button type="submit" class="btn btn-primary">Update</button>
@@ -429,6 +478,15 @@ function openEdit(img) {
     document.getElementById('eTitle').value = img.title_text || '';
     document.getElementById('eCaption').value = img.caption || '';
     document.getElementById('eOrder').value = img.display_order || 0;
+    
+    document.getElementById('eSlug').value       = img.slug || '';
+    document.getElementById('eMetaTitle').value  = img.meta_title || '';
+    document.getElementById('eMetaDesc').value   = img.meta_description || '';
+    document.getElementById('eMetaKeywords').value= img.meta_keywords || '';
+    document.getElementById('eMetaImage').value  = img.meta_image || '';
+    document.getElementById('eCanonical').value  = img.canonical_url || '';
+    document.getElementById('eRobots').value     = img.robots || 'index,follow';
+    
     document.getElementById('eActive').checked = !!img.is_active;
 }
 function closeEdit() {

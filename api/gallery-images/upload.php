@@ -17,6 +17,13 @@ $altText      = sanitize(($_POST['alt_text']       ?? ''));
 $titleText    = sanitize(($_POST['title_text']     ?? ''));
 $caption      = sanitize(($_POST['caption']        ?? ''));
 $displayOrder = (int)    ($_POST['display_order']  ?? 0);
+$slug            = slugify($_POST['slug']               ?? $titleText);
+$metaTitle       = sanitize($_POST['meta_title']         ?? '');
+$metaDescription = sanitize($_POST['meta_description']   ?? '');
+$metaKeywords    = sanitize($_POST['meta_keywords']      ?? '');
+$metaImage       = sanitize($_POST['meta_image']         ?? '');
+$canonicalUrl    = sanitize($_POST['canonical_url']      ?? '');
+$robots          = sanitize($_POST['robots']             ?? 'index,follow');
 
 if ($categoryId <= 0) {
     jsonResponse(400, 'error', null, 'Valid category_id is required.');
@@ -82,9 +89,9 @@ if (!move_uploaded_file($file['tmp_name'], $destination)) {
 $imageUrl = '/storage/gallery/' . $filename;
 
 $stmt = $conn->prepare(
-    "INSERT INTO gallery_images (category_id, image_url, alt_text, title_text, caption, width, height, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    "INSERT INTO gallery_images (category_id, image_url, slug, alt_text, title_text, caption, width, height, display_order, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 );
-$stmt->bind_param('issssiii', $categoryId, $imageUrl, $altText, $titleText, $caption, $width, $height, $displayOrder);
+$stmt->bind_param('isssssiiissssss', $categoryId, $imageUrl, $slug, $altText, $titleText, $caption, $width, $height, $displayOrder, $metaTitle, $metaDescription, $metaKeywords, $metaImage, $canonicalUrl, $robots);
 
 if ($stmt->execute()) {
     $newId = $stmt->insert_id;

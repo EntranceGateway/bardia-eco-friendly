@@ -74,6 +74,7 @@ CREATE TABLE `pages` (
     `content`    LONGTEXT       DEFAULT NULL,
     `meta_title` VARCHAR(255)   DEFAULT NULL,
     `meta_description` VARCHAR(500) DEFAULT NULL,
+    `meta_keywords` VARCHAR(500) DEFAULT NULL,
     `meta_image` VARCHAR(500)   DEFAULT NULL,
     `canonical_url` VARCHAR(500) DEFAULT NULL,
     `robots`     VARCHAR(50)    NOT NULL DEFAULT 'index,follow',
@@ -121,6 +122,12 @@ CREATE TABLE `package_categories` (
     `name`          VARCHAR(100)   NOT NULL,
     `slug`          VARCHAR(100)   NOT NULL,
     `display_order` INT            NOT NULL DEFAULT 0,
+    `meta_title` VARCHAR(255)      DEFAULT NULL,
+    `meta_description` VARCHAR(500) DEFAULT NULL,
+    `meta_keywords` VARCHAR(500)   DEFAULT NULL,
+    `meta_image` VARCHAR(500)      DEFAULT NULL,
+    `canonical_url` VARCHAR(500)   DEFAULT NULL,
+    `robots` VARCHAR(50)           NOT NULL DEFAULT 'index,follow',
     `is_active`     TINYINT(1)     NOT NULL DEFAULT 1,
     `created_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -137,11 +144,18 @@ CREATE TABLE `packages` (
     `category_id`   BIGINT         NOT NULL,
     `icon`          VARCHAR(10)    DEFAULT NULL,
     `name`          VARCHAR(100)   NOT NULL,
+    `slug`          VARCHAR(100)   NOT NULL,
     `duration`      VARCHAR(50)    DEFAULT NULL,
     `price`         DECIMAL(10,2)  NOT NULL,
     `currency`      VARCHAR(5)     NOT NULL DEFAULT '₹',
     `price_note`    VARCHAR(50)    DEFAULT NULL,
     `description`   TEXT           NOT NULL,
+    `meta_title` VARCHAR(255)      DEFAULT NULL,
+    `meta_description` VARCHAR(500) DEFAULT NULL,
+    `meta_keywords` VARCHAR(500)   DEFAULT NULL,
+    `meta_image` VARCHAR(500)      DEFAULT NULL,
+    `canonical_url` VARCHAR(500)   DEFAULT NULL,
+    `robots` VARCHAR(50)           NOT NULL DEFAULT 'index,follow',
     `is_featured`   TINYINT(1)     NOT NULL DEFAULT 0,
     `display_order` INT            NOT NULL DEFAULT 0,
     `is_active`     TINYINT(1)     NOT NULL DEFAULT 1,
@@ -149,7 +163,8 @@ CREATE TABLE `packages` (
     `updated_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     CONSTRAINT `fk_packages_category` FOREIGN KEY (`category_id`) REFERENCES `package_categories`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    INDEX `idx_packages_category` (`category_id`)
+    INDEX `idx_packages_category` (`category_id`),
+    UNIQUE KEY `uk_packages_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -180,6 +195,12 @@ CREATE TABLE `gallery_categories` (
     `name`          VARCHAR(100)   NOT NULL,
     `slug`          VARCHAR(100)   NOT NULL,
     `display_order` INT            NOT NULL DEFAULT 0,
+    `meta_title` VARCHAR(255)      DEFAULT NULL,
+    `meta_description` VARCHAR(500) DEFAULT NULL,
+    `meta_keywords` VARCHAR(500)   DEFAULT NULL,
+    `meta_image` VARCHAR(500)      DEFAULT NULL,
+    `canonical_url` VARCHAR(500)   DEFAULT NULL,
+    `robots` VARCHAR(50)           NOT NULL DEFAULT 'index,follow',
     `is_active`     TINYINT(1)     NOT NULL DEFAULT 1,
     `created_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -194,16 +215,24 @@ CREATE TABLE `gallery_images` (
     `id`            BIGINT         AUTO_INCREMENT PRIMARY KEY,
     `category_id`   BIGINT         NOT NULL,
     `image_url`     VARCHAR(500)   NOT NULL,
+    `slug`          VARCHAR(100)   DEFAULT NULL,
     `alt_text`      VARCHAR(255)   DEFAULT NULL,
     `title_text`    VARCHAR(255)   DEFAULT NULL,
     `caption`       VARCHAR(500)   DEFAULT NULL,
     `width`         INT UNSIGNED   DEFAULT NULL,
     `height`        INT UNSIGNED   DEFAULT NULL,
+    `meta_title` VARCHAR(255)      DEFAULT NULL,
+    `meta_description` VARCHAR(500) DEFAULT NULL,
+    `meta_keywords` VARCHAR(500)   DEFAULT NULL,
+    `meta_image` VARCHAR(500)      DEFAULT NULL,
+    `canonical_url` VARCHAR(500)   DEFAULT NULL,
+    `robots` VARCHAR(50)           NOT NULL DEFAULT 'index,follow',
     `display_order` INT            NOT NULL DEFAULT 0,
     `is_active`     TINYINT(1)     NOT NULL DEFAULT 1,
     `created_at`    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT `fk_galimg_category` FOREIGN KEY (`category_id`) REFERENCES `gallery_categories`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT `fk_galimg_category` FOREIGN KEY (`category_id`) REFERENCES `gallery_categories`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE KEY `uk_galimg_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `gallery_categories` (`name`, `slug`, `display_order`, `is_active`) VALUES
@@ -223,6 +252,7 @@ INSERT INTO `seo_settings` (`setting_key`, `setting_value`) VALUES
 ('site_name', 'Bardia Eco-Friendly Homestay'),
 ('default_title', 'Bardia Eco-Friendly Homestay'),
 ('default_description', 'Stay near Bardia National Park at an eco-friendly homestay offering wildlife safaris, local food, and responsible travel experiences.'),
+('default_keywords', 'Bardia, eco-friendly, homestay, Nepal, safari, wildlife, Bardiya National Park'),
 ('default_image', '/logo.png'),
 ('robots_txt', 'User-agent: *\nAllow: /\n\nSitemap: https://www.bardiaecofriendlyhomestay.com/sitemap.xml'),
 ('google_reviews_enabled', '1'),

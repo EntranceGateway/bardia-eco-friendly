@@ -9,7 +9,7 @@ if (getRequestMethod() !== 'GET') {
 }
 
 $result = $conn->query(
-    "SELECT id, name, slug, display_order, is_active
+    "SELECT id, name, slug, display_order, is_active, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots
      FROM package_categories
      ORDER BY display_order ASC, id ASC"
 );

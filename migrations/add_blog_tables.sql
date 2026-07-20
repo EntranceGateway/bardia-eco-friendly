@@ -42,6 +42,7 @@ CREATE TABLE `blog_posts` (
     -- SEO fields (matching pages table pattern)
     `meta_title`          VARCHAR(255)   DEFAULT NULL,
     `meta_description`    VARCHAR(500)   DEFAULT NULL,
+    `meta_keywords`       VARCHAR(500)   DEFAULT NULL,
     `meta_image`          VARCHAR(500)   DEFAULT NULL,
     `canonical_url`       VARCHAR(500)   DEFAULT NULL,
     `robots`              VARCHAR(50)    NOT NULL DEFAULT 'index,follow',

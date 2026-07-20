@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'site_name',
         'default_title',
         'default_description',
+        'default_keywords',
         'default_image',
         'robots_txt',
         'google_reviews_enabled',
@@ -81,6 +82,10 @@ function seo_value(array $settings, string $key, string $fallback = ''): string
         <div class="form-group">
             <label for="defaultDescription">Default Meta Description</label>
             <textarea id="defaultDescription" class="form-control" name="default_description" rows="3"><?= seo_value($settings, 'default_description') ?></textarea>
+        </div>
+        <div class="form-group">
+            <label for="defaultKeywords">Default Meta Keywords</label>
+            <textarea id="defaultKeywords" class="form-control" name="default_keywords" rows="2" placeholder="Comma-separated keywords"><?= seo_value($settings, 'default_keywords') ?></textarea>
         </div>
         <div class="form-group">
             <label for="robotsTxt">robots.txt</label>

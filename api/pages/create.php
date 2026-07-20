@@ -16,6 +16,7 @@ $slug = slugify($input['slug'] ?? $title);
 $content = $input['content'] ?? '';
 $metaTitle = sanitize($input['meta_title'] ?? '');
 $metaDescription = sanitize($input['meta_description'] ?? '');
+$metaKeywords = sanitize($input['meta_keywords'] ?? '');
 $metaImage = sanitize($input['meta_image'] ?? '');
 $canonicalUrl = sanitize($input['canonical_url'] ?? '');
 $robots = sanitize($input['robots'] ?? 'index,follow');
@@ -46,8 +47,8 @@ if (!preg_match('/^[a-z]{2}(-[a-z]{2})?$/', $languageCode)) {
     jsonResponse(400, 'error', null, 'Invalid language_code. Use values like en or ne.');
 }
 
-$stmt = $conn->prepare("INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_image, canonical_url, robots, language_code, translation_group, hreflang_url, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-$stmt->bind_param('ssssssssssss', $title, $slug, $content, $metaTitle, $metaDescription, $metaImage, $canonicalUrl, $robots, $languageCode, $translationGroup, $hreflangUrl, $status);
+$stmt = $conn->prepare("INSERT INTO pages (title, slug, content, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots, language_code, translation_group, hreflang_url, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+$stmt->bind_param('sssssssssssss', $title, $slug, $content, $metaTitle, $metaDescription, $metaKeywords, $metaImage, $canonicalUrl, $robots, $languageCode, $translationGroup, $hreflangUrl, $status);
 
 if ($stmt->execute()) {
     $newId = $stmt->insert_id;

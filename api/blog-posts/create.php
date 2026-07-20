@@ -22,6 +22,7 @@ $content          =          $_POST['content']            ?? '';
 $authorName       = sanitize($_POST['author_name']        ?? '');
 $metaTitle        = sanitize($_POST['meta_title']         ?? '');
 $metaDescription  = sanitize($_POST['meta_description']   ?? '');
+$metaKeywords     = sanitize($_POST['meta_keywords']      ?? '');
 $metaImage        = sanitize($_POST['meta_image']         ?? '');
 $canonicalUrl     = sanitize($_POST['canonical_url']      ?? '');
 $robots           = sanitize($_POST['robots']             ?? 'index,follow');
@@ -103,14 +104,14 @@ if ($status === 'published') {
 }
 
 $stmt = $conn->prepare(
-    "INSERT INTO blog_posts (category_id, title, slug, excerpt, content, featured_image, featured_image_alt, author_name, meta_title, meta_description, meta_image, canonical_url, robots, is_featured, status, published_at, display_order, is_active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    "INSERT INTO blog_posts (category_id, title, slug, excerpt, content, featured_image, featured_image_alt, author_name, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots, is_featured, status, published_at, display_order, is_active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 );
 $stmt->bind_param(
-    'issssssssssssisiii',
+    'isssssssssssssissii',
     $categoryId, $title, $slug, $excerpt, $content,
     $featuredImage, $featuredImageAlt, $authorName,
-    $metaTitle, $metaDescription, $metaImage, $canonicalUrl, $robots,
+    $metaTitle, $metaDescription, $metaKeywords, $metaImage, $canonicalUrl, $robots,
     $isFeatured, $status, $publishedAt, $displayOrder, $isActive
 );
 

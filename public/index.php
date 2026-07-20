@@ -49,6 +49,7 @@ $routes = [
     '/api/pages/delete'      => $apiDir . '/pages/delete.php',
 
     // Backend SEO
+    '/api/page-seo/get'        => $apiDir . '/page-seo/get.php',
     '/api/seo-settings/get'    => $apiDir . '/seo-settings/get.php',
     '/api/seo-settings/update' => $apiDir . '/seo-settings/update.php',
     '/api/faqs/list'           => $apiDir . '/faqs/list.php',

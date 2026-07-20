@@ -32,6 +32,7 @@ $slug = slugify($input['slug'] ?? $title);
 $content = $input['content'] ?? '';
 $metaTitle = sanitize($input['meta_title'] ?? '');
 $metaDescription = sanitize($input['meta_description'] ?? '');
+$metaKeywords = sanitize($input['meta_keywords'] ?? '');
 $metaImage = sanitize($input['meta_image'] ?? '');
 $canonicalUrl = sanitize($input['canonical_url'] ?? '');
 $robots = sanitize($input['robots'] ?? 'index,follow');
@@ -62,8 +63,8 @@ if (!preg_match('/^[a-z]{2}(-[a-z]{2})?$/', $languageCode)) {
     jsonResponse(400, 'error', null, 'Invalid language_code. Use values like en or ne.');
 }
 
-$stmt = $conn->prepare("UPDATE pages SET title = ?, slug = ?, content = ?, meta_title = ?, meta_description = ?, meta_image = ?, canonical_url = ?, robots = ?, language_code = ?, translation_group = ?, hreflang_url = ?, status = ?, updated_at = NOW() WHERE id = ?");
-$stmt->bind_param('ssssssssssssi', $title, $slug, $content, $metaTitle, $metaDescription, $metaImage, $canonicalUrl, $robots, $languageCode, $translationGroup, $hreflangUrl, $status, $id);
+$stmt = $conn->prepare("UPDATE pages SET title = ?, slug = ?, content = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, meta_image = ?, canonical_url = ?, robots = ?, language_code = ?, translation_group = ?, hreflang_url = ?, status = ?, updated_at = NOW() WHERE id = ?");
+$stmt->bind_param('sssssssssssssi', $title, $slug, $content, $metaTitle, $metaDescription, $metaKeywords, $metaImage, $canonicalUrl, $robots, $languageCode, $translationGroup, $hreflangUrl, $status, $id);
 
 if ($stmt->execute()) {
     if ($existingPage['slug'] !== $slug) {

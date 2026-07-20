@@ -11,8 +11,9 @@ if (getRequestMethod() !== 'GET') {
 
 $filterCatId = (int) ($_GET['category_id'] ?? 0);
 
-$sql = "SELECT p.id, p.category_id, p.icon, p.name, p.duration,
+$sql = "SELECT p.id, p.category_id, p.icon, p.name, p.slug, p.duration,
                p.price, p.currency, p.price_note, p.description,
+               p.meta_title, p.meta_description, p.meta_keywords, p.meta_image, p.canonical_url, p.robots,
                p.is_featured, p.display_order, p.is_active,
                pc.name AS category_name, pc.slug AS category_slug
         FROM packages p

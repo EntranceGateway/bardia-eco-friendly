@@ -17,8 +17,14 @@ $categoryId   = (int)   ($input['category_id']   ?? 0);
 $altText      = sanitize($input['alt_text']       ?? '');
 $titleText    = sanitize($input['title_text']     ?? '');
 $caption      = sanitize($input['caption']        ?? '');
-$displayOrder = (int)   ($input['display_order']  ?? 0);
 $isActive     = isset($input['is_active']) ? (int)(bool)$input['is_active'] : 1;
+$slug            = slugify($input['slug']               ?? $titleText);
+$metaTitle       = sanitize($input['meta_title']         ?? '');
+$metaDescription = sanitize($input['meta_description']   ?? '');
+$metaKeywords    = sanitize($input['meta_keywords']      ?? '');
+$metaImage       = sanitize($input['meta_image']         ?? '');
+$canonicalUrl    = sanitize($input['canonical_url']      ?? '');
+$robots          = sanitize($input['robots']             ?? 'index,follow');
 
 if ($id <= 0) {
     jsonResponse(400, 'error', null, 'Valid image id is required.');
@@ -50,9 +56,9 @@ if ($catCheck->num_rows === 0) {
 $catCheck->close();
 
 $stmt = $conn->prepare(
-    "UPDATE gallery_images SET category_id=?, alt_text=?, title_text=?, caption=?, display_order=?, is_active=? WHERE id=?"
+    "UPDATE gallery_images SET category_id=?, slug=?, alt_text=?, title_text=?, caption=?, display_order=?, is_active=?, meta_title=?, meta_description=?, meta_keywords=?, meta_image=?, canonical_url=?, robots=? WHERE id=?"
 );
-$stmt->bind_param('isssiii', $categoryId, $altText, $titleText, $caption, $displayOrder, $isActive, $id);
+$stmt->bind_param('issssiiissssssi', $categoryId, $slug, $altText, $titleText, $caption, $displayOrder, $isActive, $metaTitle, $metaDescription, $metaKeywords, $metaImage, $canonicalUrl, $robots, $id);
 
 if ($stmt->execute()) {
     $stmt->close();

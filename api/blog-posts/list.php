@@ -60,7 +60,7 @@ if (!empty($params)) {
 // Fetch posts
 $sql = "SELECT bp.id, bp.category_id, bp.title, bp.slug, bp.excerpt,
                bp.featured_image, bp.featured_image_alt, bp.author_name,
-               bp.meta_title, bp.meta_description,
+               bp.meta_title, bp.meta_description, bp.meta_keywords,
                bp.is_featured, bp.status, bp.published_at,
                bp.display_order, bp.is_active, bp.created_at, bp.updated_at,
                bc.name AS category_name, bc.slug AS category_slug

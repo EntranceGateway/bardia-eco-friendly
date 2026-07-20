@@ -16,6 +16,12 @@ $name         = sanitize($input['name']         ?? '');
 $slug         = slugify($input['slug']         ?? $name);
 $displayOrder = (int)   ($input['display_order'] ?? 0);
 $isActive     = isset($input['is_active']) ? (int)(bool)$input['is_active'] : 1;
+$metaTitle       = sanitize($input['meta_title']         ?? '');
+$metaDescription = sanitize($input['meta_description']   ?? '');
+$metaKeywords    = sanitize($input['meta_keywords']      ?? '');
+$metaImage       = sanitize($input['meta_image']         ?? '');
+$canonicalUrl    = sanitize($input['canonical_url']      ?? '');
+$robots          = sanitize($input['robots']             ?? 'index,follow');
 
 if ($id <= 0) {
     jsonResponse(400, 'error', null, 'Valid category id is required.');
@@ -47,9 +53,9 @@ if ($dup->num_rows > 0) {
 $dup->close();
 
 $stmt = $conn->prepare(
-    "UPDATE gallery_categories SET name=?, slug=?, display_order=?, is_active=? WHERE id=?"
+    "UPDATE gallery_categories SET name=?, slug=?, display_order=?, is_active=?, meta_title=?, meta_description=?, meta_keywords=?, meta_image=?, canonical_url=?, robots=? WHERE id=?"
 );
-$stmt->bind_param('ssiii', $name, $slug, $displayOrder, $isActive, $id);
+$stmt->bind_param('ssiissssssi', $name, $slug, $displayOrder, $isActive, $metaTitle, $metaDescription, $metaKeywords, $metaImage, $canonicalUrl, $robots, $id);
 
 if ($stmt->execute()) {
     $stmt->close();

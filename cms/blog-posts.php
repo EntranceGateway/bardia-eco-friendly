@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $featuredImgAlt  = trim(  $_POST['featured_image_alt'] ?? '');
         $metaTitle       = trim(  $_POST['meta_title']        ?? '');
         $metaDescription = trim(  $_POST['meta_description']  ?? '');
+        $metaKeywords    = trim(  $_POST['meta_keywords']     ?? '');
         $metaImage       = trim(  $_POST['meta_image']        ?? '');
         $canonicalUrl    = trim(  $_POST['canonical_url']     ?? '');
         $robots          =        $_POST['robots']            ?? 'index,follow';
@@ -113,14 +114,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $publishedAt = ($status === 'published') ? date('Y-m-d H:i:s') : null;
 
                         $stmt = $conn->prepare(
-                            "INSERT INTO blog_posts (category_id, title, slug, excerpt, content, featured_image, featured_image_alt, author_name, meta_title, meta_description, meta_image, canonical_url, robots, is_featured, status, published_at, display_order, is_active)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                            "INSERT INTO blog_posts (category_id, title, slug, excerpt, content, featured_image, featured_image_alt, author_name, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots, is_featured, status, published_at, display_order, is_active)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                         );
                         $stmt->bind_param(
-                            'issssssssssssisiii',
+                            'isssssssssssssissii',
                             $categoryId, $title, $slug, $excerpt, $content,
                             $featuredImage, $featuredImgAlt, $authorName,
-                            $metaTitle, $metaDescription, $metaImage, $canonicalUrl, $robots,
+                            $metaTitle, $metaDescription, $metaKeywords, $metaImage, $canonicalUrl, $robots,
                             $isFeatured, $status, $publishedAt, $displayOrder, $isActive
                         );
                         $success = $stmt->execute() ? 'Blog post created.' : '';
@@ -197,15 +198,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             $stmt = $conn->prepare(
                                 "UPDATE blog_posts SET category_id=?, title=?, slug=?, excerpt=?, content=?,
-                                        author_name=?, meta_title=?, meta_description=?, meta_image=?,
+                                        author_name=?, meta_title=?, meta_description=?, meta_keywords=?, meta_image=?,
                                         canonical_url=?, robots=?, is_featured=?, status=?, published_at=?,
                                         display_order=?, is_active=?
                                  WHERE id=?"
                             );
                             $stmt->bind_param(
-                                'issssssssssisisii',
+                                'isssssssssssissiii',
                                 $categoryId, $title, $slug, $excerpt, $content,
-                                $authorName, $metaTitle, $metaDescription, $metaImage,
+                                $authorName, $metaTitle, $metaDescription, $metaKeywords, $metaImage,
                                 $canonicalUrl, $robots, $isFeatured, $status, $publishedAt,
                                 $displayOrder, $isActive, $id
                             );
@@ -234,7 +235,7 @@ $posts = [];
 try {
     $postSql = "SELECT bp.id, bp.category_id, bp.title, bp.slug, bp.excerpt,
                        bp.featured_image, bp.featured_image_alt, bp.author_name,
-                       bp.meta_title, bp.meta_description, bp.meta_image, bp.canonical_url, bp.robots,
+                       bp.meta_title, bp.meta_description, bp.meta_keywords, bp.meta_image, bp.canonical_url, bp.robots,
                        bp.is_featured, bp.status, bp.published_at,
                        bp.display_order, bp.is_active, bp.created_at, bp.content,
                        bc.name AS category_name
@@ -527,6 +528,10 @@ $robotsOptions = ['index,follow' => 'Index, Follow', 'noindex,follow' => 'NoInde
                         <div class="char-counter" id="metaDescCounter">0 / 160</div>
                     </div>
                     <div class="form-group">
+                        <label for="fMetaKeywords">Meta Keywords</label>
+                        <textarea class="form-control" id="fMetaKeywords" name="meta_keywords" rows="2" placeholder="Comma-separated keywords"></textarea>
+                    </div>
+                    <div class="form-group">
                         <label for="fMetaImage">OG Image URL</label>
                         <input type="text" class="form-control" id="fMetaImage" name="meta_image" placeholder="/storage/blog/og-image.jpg">
                     </div>
@@ -653,6 +658,7 @@ function openModal(post) {
         // SEO fields
         document.getElementById('fMetaTitle').value = post.meta_title || '';
         document.getElementById('fMetaDesc').value  = post.meta_description || '';
+        document.getElementById('fMetaKeywords').value = post.meta_keywords || '';
         document.getElementById('fMetaImage').value = post.meta_image || '';
         document.getElementById('fCanonical').value = post.canonical_url || '';
         document.getElementById('fRobots').value    = post.robots || 'index,follow';

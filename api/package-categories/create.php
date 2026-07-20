@@ -16,6 +16,12 @@ $name         = sanitize($input['name']  ?? '');
 $slug         = sanitize($input['slug']  ?? '');
 $displayOrder = (int)  ($input['display_order'] ?? 0);
 $isActive     = isset($input['is_active']) ? (int)(bool)$input['is_active'] : 1;
+$metaTitle       = sanitize($input['meta_title']         ?? '');
+$metaDescription = sanitize($input['meta_description']   ?? '');
+$metaKeywords    = sanitize($input['meta_keywords']      ?? '');
+$metaImage       = sanitize($input['meta_image']         ?? '');
+$canonicalUrl    = sanitize($input['canonical_url']      ?? '');
+$robots          = sanitize($input['robots']             ?? 'index,follow');
 
 if (empty($name)) {
     jsonResponse(400, 'error', null, 'Category name is required.');
@@ -39,9 +45,9 @@ if ($dup->num_rows > 0) {
 $dup->close();
 
 $stmt = $conn->prepare(
-    "INSERT INTO package_categories (name, slug, display_order, is_active) VALUES (?, ?, ?, ?)"
+    "INSERT INTO package_categories (name, slug, display_order, is_active, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 );
-$stmt->bind_param('ssii', $name, $slug, $displayOrder, $isActive);
+$stmt->bind_param('ssiissssss', $name, $slug, $displayOrder, $isActive, $metaTitle, $metaDescription, $metaKeywords, $metaImage, $canonicalUrl, $robots);
 
 if ($stmt->execute()) {
     $newId = $stmt->insert_id;

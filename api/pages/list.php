@@ -8,7 +8,7 @@ if (getRequestMethod() !== 'GET') {
     jsonResponse(405, 'error', null, 'Method not allowed. Use GET.');
 }
 
-$result = $conn->query("SELECT id, title, slug, content, meta_title, meta_description, meta_image, canonical_url, robots, language_code, translation_group, hreflang_url, status, created_at, updated_at FROM pages ORDER BY created_at DESC");
+$result = $conn->query("SELECT id, title, slug, content, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots, language_code, translation_group, hreflang_url, status, created_at, updated_at FROM pages ORDER BY created_at DESC");
 
 if (!$result) {
     logError('Pages list query failed: ' . $conn->error);

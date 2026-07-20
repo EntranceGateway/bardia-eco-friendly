@@ -23,6 +23,7 @@ $authorName       = sanitize($_POST['author_name']        ?? '');
 $featuredImageAlt = sanitize($_POST['featured_image_alt'] ?? '');
 $metaTitle        = sanitize($_POST['meta_title']         ?? '');
 $metaDescription  = sanitize($_POST['meta_description']   ?? '');
+$metaKeywords     = sanitize($_POST['meta_keywords']      ?? '');
 $metaImage        = sanitize($_POST['meta_image']         ?? '');
 $canonicalUrl     = sanitize($_POST['canonical_url']      ?? '');
 $robots           = sanitize($_POST['robots']             ?? 'index,follow');
@@ -132,15 +133,15 @@ try {
     // Update remaining fields
     $stmt = $conn->prepare(
         "UPDATE blog_posts SET category_id=?, title=?, slug=?, excerpt=?, content=?,
-                author_name=?, meta_title=?, meta_description=?, meta_image=?,
+                author_name=?, meta_title=?, meta_description=?, meta_keywords=?, meta_image=?,
                 canonical_url=?, robots=?, is_featured=?, status=?, published_at=?,
                 display_order=?, is_active=?
          WHERE id=?"
     );
     $stmt->bind_param(
-        'issssssssssisisii',
+        'isssssssssssissiii',
         $categoryId, $title, $slug, $excerpt, $content,
-        $authorName, $metaTitle, $metaDescription, $metaImage,
+        $authorName, $metaTitle, $metaDescription, $metaKeywords, $metaImage,
         $canonicalUrl, $robots, $isFeatured, $status, $publishedAt,
         $displayOrder, $isActive, $id
     );

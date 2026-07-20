@@ -42,6 +42,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $currency     =           $_POST['currency']     ?? '₹';
         $priceNote    = trim($_POST['price_note']    ?? '');
         $description  = trim($_POST['description']   ?? '');
+        $slug         = trim($_POST['slug']          ?? '');
+        if (empty($slug)) { $slug = strtolower(preg_replace('/[^a-z0-9-]/', '-', $name)); }
+        $metaTitle    = trim($_POST['meta_title']    ?? '');
+        $metaDesc     = trim($_POST['meta_description'] ?? '');
+        $metaKeywords = trim($_POST['meta_keywords'] ?? '');
+        $metaImage    = trim($_POST['meta_image']    ?? '');
+        $canonicalUrl = trim($_POST['canonical_url'] ?? '');
+        $robots       = trim($_POST['robots']        ?? 'index,follow');
         $isFeatured   = isset($_POST['is_featured'])  ? 1 : 0;
         $displayOrder = (int)    ($_POST['display_order'] ?? 0);
         $isActive     = isset($_POST['is_active'])    ? 1 : 0;
@@ -53,10 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         else {
             if ($action === 'create') {
                 $stmt = $conn->prepare(
-                    "INSERT INTO packages (category_id, icon, name, duration, price, currency, price_note, description, is_featured, display_order, is_active)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    "INSERT INTO packages (category_id, icon, name, slug, duration, price, currency, price_note, description, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots, is_featured, display_order, is_active)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 );
-                $stmt->bind_param('isssdsssiii', $categoryId, $icon, $name, $duration, $price, $currency, $priceNote, $description, $isFeatured, $displayOrder, $isActive);
+                $stmt->bind_param('issssdsssssssssiii', $categoryId, $icon, $name, $slug, $duration, $price, $currency, $priceNote, $description, $metaTitle, $metaDesc, $metaKeywords, $metaImage, $canonicalUrl, $robots, $isFeatured, $displayOrder, $isActive);
                 $success = $stmt->execute() ? 'Package created.' : '';
                 if (!$success) $error = 'Create failed: ' . $stmt->error;
                 $stmt->close();
@@ -64,9 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($id <= 0) { $error = 'Invalid ID.'; }
                 else {
                     $stmt = $conn->prepare(
-                        "UPDATE packages SET category_id=?, icon=?, name=?, duration=?, price=?, currency=?, price_note=?, description=?, is_featured=?, display_order=?, is_active=? WHERE id=?"
+                        "UPDATE packages SET category_id=?, icon=?, name=?, slug=?, duration=?, price=?, currency=?, price_note=?, description=?, meta_title=?, meta_description=?, meta_keywords=?, meta_image=?, canonical_url=?, robots=?, is_featured=?, display_order=?, is_active=? WHERE id=?"
                     );
-                    $stmt->bind_param('isssdsssiiii', $categoryId, $icon, $name, $duration, $price, $currency, $priceNote, $description, $isFeatured, $displayOrder, $isActive, $id);
+                    $stmt->bind_param('issssdsssssssssiiii', $categoryId, $icon, $name, $slug, $duration, $price, $currency, $priceNote, $description, $metaTitle, $metaDesc, $metaKeywords, $metaImage, $canonicalUrl, $robots, $isFeatured, $displayOrder, $isActive, $id);
                     $success = $stmt->execute() ? 'Package updated.' : '';
                     if (!$success) $error = 'Update failed: ' . $stmt->error;
                     $stmt->close();
@@ -80,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $packages = [];
 try {
     $res = db_query($conn,
-        "SELECT p.id, p.category_id, p.icon, p.name, p.duration, p.price, p.currency, p.price_note, p.description, p.is_featured, p.display_order, p.is_active, pc.name AS category_name
+        "SELECT p.id, p.category_id, p.icon, p.name, p.slug, p.duration, p.price, p.currency, p.price_note, p.description, p.meta_title, p.meta_description, p.meta_keywords, p.meta_image, p.canonical_url, p.robots, p.is_featured, p.display_order, p.is_active, pc.name AS category_name
          FROM packages p LEFT JOIN package_categories pc ON p.category_id = pc.id
          ORDER BY pc.display_order ASC, p.display_order ASC, p.id ASC"
     );
@@ -266,6 +274,41 @@ $currencyOptions = ['₹' => '₹ (NPR)', '$' => '$ (USD)', '€' => '€ (EUR)'
                 <label for="fDesc">Description</label>
                 <textarea class="form-control" id="fDesc" name="description" rows="3"></textarea>
             </div>
+            <hr style="margin:20px 0; border:0; border-top:1px solid var(--border);">
+            <h4 style="margin-bottom:12px; font-size:0.95rem; color:var(--brand-dk);">SEO Settings</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fSlug">URL Slug (Auto-generated if empty)</label>
+                    <input type="text" class="form-control" id="fSlug" name="slug" pattern="[a-z0-9\-]+">
+                </div>
+                <div class="form-group">
+                    <label for="fMetaTitle">Meta Title</label>
+                    <input type="text" class="form-control" id="fMetaTitle" name="meta_title">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fMetaDesc">Meta Description</label>
+                <textarea class="form-control" id="fMetaDesc" name="meta_description" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fMetaKeywords">Meta Keywords</label>
+                <input type="text" class="form-control" id="fMetaKeywords" name="meta_keywords" placeholder="safari, wildlife, homestay">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fMetaImage">Meta Image URL</label>
+                    <input type="text" class="form-control" id="fMetaImage" name="meta_image" placeholder="/uploads/package.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="fCanonical">Canonical URL</label>
+                    <input type="url" class="form-control" id="fCanonical" name="canonical_url">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fRobots">Robots</label>
+                <input type="text" class="form-control" id="fRobots" name="robots" value="index,follow">
+            </div>
+            <hr style="margin:20px 0; border:0; border-top:1px solid var(--border);">
             <div style="display:flex;gap:20px;flex-wrap:wrap;">
                 <div class="check-group">
                     <input type="checkbox" id="fFeatured" name="is_featured" value="1">
@@ -399,6 +442,13 @@ function openModal(pkg) {
         document.getElementById('fCurrency').value   = pkg.currency || '₹';
         document.getElementById('fPriceNote').value  = pkg.price_note || '';
         document.getElementById('fDesc').value       = pkg.description || '';
+        document.getElementById('fSlug').value       = pkg.slug || '';
+        document.getElementById('fMetaTitle').value  = pkg.meta_title || '';
+        document.getElementById('fMetaDesc').value   = pkg.meta_description || '';
+        document.getElementById('fMetaKeywords').value= pkg.meta_keywords || '';
+        document.getElementById('fMetaImage').value  = pkg.meta_image || '';
+        document.getElementById('fCanonical').value  = pkg.canonical_url || '';
+        document.getElementById('fRobots').value     = pkg.robots || 'index,follow';
         document.getElementById('fOrder').value      = pkg.display_order || 0;
         document.getElementById('fFeatured').checked = !!pkg.is_featured;
         document.getElementById('fActive').checked   = !!pkg.is_active;

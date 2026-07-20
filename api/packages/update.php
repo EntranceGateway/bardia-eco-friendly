@@ -25,6 +25,13 @@ $price        = (float) ($input['price']          ?? 0);
 $currency     =          $input['currency']       ?? '₹';
 $priceNote    = sanitize($input['price_note']     ?? '');
 $description  = sanitize($input['description']    ?? '');
+$slug            = slugify( $input['slug']               ?? $name);
+$metaTitle       = sanitize($input['meta_title']         ?? '');
+$metaDescription = sanitize($input['meta_description']   ?? '');
+$metaKeywords    = sanitize($input['meta_keywords']      ?? '');
+$metaImage       = sanitize($input['meta_image']         ?? '');
+$canonicalUrl    = sanitize($input['canonical_url']      ?? '');
+$robots          = sanitize($input['robots']             ?? 'index,follow');
 $isFeatured   = isset($input['is_featured'])   ? (int)(bool)$input['is_featured']   : 0;
 $displayOrder = isset($input['display_order']) ? (int)$input['display_order']       : 0;
 $isActive     = isset($input['is_active'])     ? (int)(bool)$input['is_active']     : 1;
@@ -53,14 +60,13 @@ $catCheck->store_result();
 if ($catCheck->num_rows === 0) { $catCheck->close(); jsonResponse(404, 'error', null, 'Package category not found.'); }
 $catCheck->close();
 
-// Types: i s s s d s s s i i i i  (12 params)
-// category_id, icon, name, duration, price, currency, price_note, description, is_featured, display_order, is_active, id
+// Types: issssdssssssssiiiii (19 params)
 $stmt = $conn->prepare(
     "UPDATE packages
-     SET category_id=?, icon=?, name=?, duration=?, price=?, currency=?, price_note=?, description=?, is_featured=?, display_order=?, is_active=?
+     SET category_id=?, icon=?, name=?, slug=?, duration=?, price=?, currency=?, price_note=?, description=?, meta_title=?, meta_description=?, meta_keywords=?, meta_image=?, canonical_url=?, robots=?, is_featured=?, display_order=?, is_active=?
      WHERE id=?"
 );
-$stmt->bind_param('isssdsssiiii', $categoryId, $icon, $name, $duration, $price, $currency, $priceNote, $description, $isFeatured, $displayOrder, $isActive, $id);
+$stmt->bind_param('issssdsssssssssiiii', $categoryId, $icon, $name, $slug, $duration, $price, $currency, $priceNote, $description, $metaTitle, $metaDescription, $metaKeywords, $metaImage, $canonicalUrl, $robots, $isFeatured, $displayOrder, $isActive, $id);
 
 if ($stmt->execute()) {
     $stmt->close();

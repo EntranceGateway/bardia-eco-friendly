@@ -27,6 +27,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $slug         = trim($_POST['slug']         ?? '');
         $displayOrder = (int)   ($_POST['display_order'] ?? 0);
         $isActive     = isset($_POST['is_active']) ? 1 : 0;
+        
+        $metaTitle    = trim($_POST['meta_title']    ?? '');
+        $metaDesc     = trim($_POST['meta_description'] ?? '');
+        $metaKeywords = trim($_POST['meta_keywords'] ?? '');
+        $metaImage    = trim($_POST['meta_image']    ?? '');
+        $canonicalUrl = trim($_POST['canonical_url'] ?? '');
+        $robots       = trim($_POST['robots']        ?? 'index,follow');
 
         if (empty($name)) { $error = 'Name is required.'; }
         elseif (empty($slug)) { $error = 'Slug is required.'; }
@@ -43,14 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!$error) {
                 if ($action === 'create') {
-                    $stmt = $conn->prepare("INSERT INTO gallery_categories (name, slug, display_order, is_active) VALUES (?, ?, ?, ?)");
-                    $stmt->bind_param('ssii', $name, $slug, $displayOrder, $isActive);
+                    $stmt = $conn->prepare("INSERT INTO gallery_categories (name, slug, display_order, is_active, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->bind_param('ssiissssss', $name, $slug, $displayOrder, $isActive, $metaTitle, $metaDesc, $metaKeywords, $metaImage, $canonicalUrl, $robots);
                     $success = $stmt->execute() ? 'Category created.' : '';
                     if (!$success) $error = 'Create failed: ' . $stmt->error;
                     $stmt->close();
                 } else {
-                    $stmt = $conn->prepare("UPDATE gallery_categories SET name=?, slug=?, display_order=?, is_active=? WHERE id=?");
-                    $stmt->bind_param('ssiii', $name, $slug, $displayOrder, $isActive, $id);
+                    $stmt = $conn->prepare("UPDATE gallery_categories SET name=?, slug=?, display_order=?, is_active=?, meta_title=?, meta_description=?, meta_keywords=?, meta_image=?, canonical_url=?, robots=? WHERE id=?");
+                    $stmt->bind_param('ssiissssssi', $name, $slug, $displayOrder, $isActive, $metaTitle, $metaDesc, $metaKeywords, $metaImage, $canonicalUrl, $robots, $id);
                     $success = $stmt->execute() ? 'Category updated.' : '';
                     if (!$success) $error = 'Update failed: ' . $stmt->error;
                     $stmt->close();
@@ -63,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ---------- Fetch categories ----------
 $categories = [];
 try {
-    $res = db_query($conn, "SELECT id, name, slug, display_order, is_active FROM gallery_categories ORDER BY display_order ASC, id ASC");
+    $res = db_query($conn, "SELECT id, name, slug, display_order, is_active, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM gallery_categories ORDER BY display_order ASC, id ASC");
     while ($r = $res->fetch_assoc()) {
         $r['id'] = (int) $r['id'];
         $r['display_order'] = (int) $r['display_order'];
@@ -165,6 +172,37 @@ try {
                     </div>
                 </div>
             </div>
+
+            <hr style="margin:20px 0; border:0; border-top:1px solid var(--border);">
+            <h4 style="margin-bottom:12px; font-size:0.95rem; color:var(--brand-dk);">SEO Settings</h4>
+            <div class="form-group">
+                <label for="fMetaTitle">Meta Title</label>
+                <input type="text" class="form-control" id="fMetaTitle" name="meta_title">
+            </div>
+            <div class="form-group">
+                <label for="fMetaDesc">Meta Description</label>
+                <textarea class="form-control" id="fMetaDesc" name="meta_description" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fMetaKeywords">Meta Keywords</label>
+                <input type="text" class="form-control" id="fMetaKeywords" name="meta_keywords" placeholder="safari, wildlife, homestay">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fMetaImage">Meta Image URL</label>
+                    <input type="text" class="form-control" id="fMetaImage" name="meta_image">
+                </div>
+                <div class="form-group">
+                    <label for="fCanonical">Canonical URL</label>
+                    <input type="url" class="form-control" id="fCanonical" name="canonical_url">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fRobots">Robots</label>
+                <input type="text" class="form-control" id="fRobots" name="robots" value="index,follow">
+            </div>
+            <hr style="margin:20px 0; border:0; border-top:1px solid var(--border);">
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                 <button type="submit" class="btn btn-primary" id="submitBtn">Save</button>
@@ -191,6 +229,12 @@ function openModal(cat) {
         document.getElementById('fName').value   = cat.name || '';
         document.getElementById('fSlug').value   = cat.slug || '';
         document.getElementById('fOrder').value  = cat.display_order || 0;
+        document.getElementById('fMetaTitle').value  = cat.meta_title || '';
+        document.getElementById('fMetaDesc').value   = cat.meta_description || '';
+        document.getElementById('fMetaKeywords').value= cat.meta_keywords || '';
+        document.getElementById('fMetaImage').value  = cat.meta_image || '';
+        document.getElementById('fCanonical').value  = cat.canonical_url || '';
+        document.getElementById('fRobots').value     = cat.robots || 'index,follow';
         document.getElementById('fActive').checked = !!cat.is_active;
         document.getElementById('submitBtn').textContent = 'Update';
     } else {

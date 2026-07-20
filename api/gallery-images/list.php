@@ -15,7 +15,8 @@ if ($categoryId !== null && $categoryId <= 0) {
     jsonResponse(400, 'error', null, 'category_id must be a positive integer.');
 }
 
-$sql = "SELECT gi.id, gi.category_id, gi.image_url, gi.alt_text, gi.title_text, gi.caption, gi.width, gi.height, gi.display_order, gi.is_active, gi.created_at,
+$sql = "SELECT gi.id, gi.category_id, gi.image_url, gi.slug, gi.alt_text, gi.title_text, gi.caption, gi.width, gi.height, gi.display_order, gi.is_active, gi.created_at,
+               gi.meta_title, gi.meta_description, gi.meta_keywords, gi.meta_image, gi.canonical_url, gi.robots,
                gc.slug AS category_slug, gc.name AS category_name
         FROM gallery_images gi
         LEFT JOIN gallery_categories gc ON gi.category_id = gc.id";
@@ -49,6 +50,13 @@ while ($row = $result->fetch_assoc()) {
         'displayOrder'  => (int)  $row['display_order'],
         'isActive'      => (bool) $row['is_active'],
         'createdAt'     => $row['created_at'],
+        'slug'          => $row['slug'],
+        'metaTitle'     => $row['meta_title'],
+        'metaDescription'=> $row['meta_description'],
+        'metaKeywords'  => $row['meta_keywords'],
+        'metaImage'     => $row['meta_image'],
+        'canonicalUrl'  => $row['canonical_url'],
+        'robots'        => $row['robots'],
     ];
 }
 
