@@ -15,6 +15,15 @@ if ($slug === '') {
     jsonResponse(400, 'error', null, 'Slug parameter is required.');
 }
 
+// Normalize slug & build search variants (e.g., contact <-> contact-us, about <-> about-us)
+$slugVariants = [$slug];
+if ($slug === 'contact') $slugVariants[] = 'contact-us';
+elseif ($slug === 'contact-us') $slugVariants[] = 'contact';
+elseif ($slug === 'about') $slugVariants[] = 'about-us';
+elseif ($slug === 'about-us') $slugVariants[] = 'about';
+elseif ($slug === 'index') $slugVariants[] = 'home';
+elseif ($slug === 'home') $slugVariants[] = 'index';
+
 // 1. Fetch global SEO settings for fallbacks
 $settings = [];
 $settingsRes = $conn->query("SELECT setting_key, setting_value FROM seo_settings");
@@ -32,85 +41,161 @@ $defaultImage = $settings['default_image'] ?? '/logo.png';
 $pageData = null;
 $type = 'page';
 
-// 2. Look in pages table
-$stmt = $conn->prepare(
-    "SELECT id, title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots, language_code, translation_group, hreflang_url, status
-     FROM pages WHERE slug = ? AND status = 'published' LIMIT 1"
-);
-$stmt->bind_param('s', $slug);
-$stmt->execute();
-$result = $stmt->get_result();
-if ($row = $result->fetch_assoc()) {
-    $pageData = $row;
-}
-$stmt->close();
-
-// 3. If not found, look in blog_posts table
-if (!$pageData) {
+// 2. Look in pages table using all slug variants
+foreach ($slugVariants as $variant) {
     $stmt = $conn->prepare(
-        "SELECT id, title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots, status
-         FROM blog_posts WHERE slug = ? AND status = 'published' AND is_active = 1 LIMIT 1"
+        "SELECT id, title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots, language_code, translation_group, hreflang_url, status
+         FROM pages WHERE slug = ? AND status = 'published' LIMIT 1"
     );
-    $stmt->bind_param('s', $slug);
+    $stmt->bind_param('s', $variant);
     $stmt->execute();
     $result = $stmt->get_result();
     if ($row = $result->fetch_assoc()) {
         $pageData = $row;
-        $type = 'blog_post';
+        $stmt->close();
+        break;
     }
     $stmt->close();
+}
+
+// 3. If not found, look in blog_posts table
+if (!$pageData) {
+    foreach ($slugVariants as $variant) {
+        $stmt = $conn->prepare(
+            "SELECT id, title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots, status
+             FROM blog_posts WHERE slug = ? AND status = 'published' AND is_active = 1 LIMIT 1"
+        );
+        $stmt->bind_param('s', $variant);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $pageData = $row;
+            $type = 'blog_post';
+            $stmt->close();
+            break;
+        }
+        $stmt->close();
+    }
+}
+
+// 3.4 Look in activities table
+if (!$pageData) {
+    foreach ($slugVariants as $variant) {
+        $stmt = $conn->prepare("SELECT id, title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM activities WHERE slug = ? AND is_active = 1 LIMIT 1");
+        $stmt->bind_param('s', $variant);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $pageData = $row;
+            $type = 'activity';
+            $stmt->close();
+            break;
+        }
+        $stmt->close();
+    }
 }
 
 // 3.5 Look in package_categories
 if (!$pageData) {
-    $stmt = $conn->prepare("SELECT id, name AS title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM package_categories WHERE slug = ? AND is_active = 1 LIMIT 1");
-    $stmt->bind_param('s', $slug);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        $pageData = $row;
-        $type = 'package_category';
+    foreach ($slugVariants as $variant) {
+        $stmt = $conn->prepare("SELECT id, name AS title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM package_categories WHERE slug = ? AND is_active = 1 LIMIT 1");
+        $stmt->bind_param('s', $variant);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $pageData = $row;
+            $type = 'package_category';
+            $stmt->close();
+            break;
+        }
+        $stmt->close();
     }
-    $stmt->close();
 }
 
 // 3.6 Look in packages
 if (!$pageData) {
-    $stmt = $conn->prepare("SELECT id, name AS title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM packages WHERE slug = ? AND is_active = 1 LIMIT 1");
-    $stmt->bind_param('s', $slug);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        $pageData = $row;
-        $type = 'package';
+    foreach ($slugVariants as $variant) {
+        $stmt = $conn->prepare("SELECT id, name AS title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM packages WHERE slug = ? AND is_active = 1 LIMIT 1");
+        $stmt->bind_param('s', $variant);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $pageData = $row;
+            $type = 'package';
+            $stmt->close();
+            break;
+        }
+        $stmt->close();
     }
-    $stmt->close();
 }
 
 // 3.7 Look in gallery_categories
 if (!$pageData) {
-    $stmt = $conn->prepare("SELECT id, name AS title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM gallery_categories WHERE slug = ? AND is_active = 1 LIMIT 1");
-    $stmt->bind_param('s', $slug);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        $pageData = $row;
-        $type = 'gallery_category';
+    foreach ($slugVariants as $variant) {
+        $stmt = $conn->prepare("SELECT id, name AS title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM gallery_categories WHERE slug = ? AND is_active = 1 LIMIT 1");
+        $stmt->bind_param('s', $variant);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $pageData = $row;
+            $type = 'gallery_category';
+            $stmt->close();
+            break;
+        }
+        $stmt->close();
     }
-    $stmt->close();
 }
 
 // 3.8 Look in gallery_images
 if (!$pageData) {
-    $stmt = $conn->prepare("SELECT id, title_text AS title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM gallery_images WHERE slug = ? AND is_active = 1 LIMIT 1");
-    $stmt->bind_param('s', $slug);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($row = $result->fetch_assoc()) {
-        $pageData = $row;
-        $type = 'gallery_image';
+    foreach ($slugVariants as $variant) {
+        $stmt = $conn->prepare("SELECT id, title_text AS title, slug, meta_title, meta_description, meta_keywords, meta_image, canonical_url, robots FROM gallery_images WHERE slug = ? AND is_active = 1 LIMIT 1");
+        $stmt->bind_param('s', $variant);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $pageData = $row;
+            $type = 'gallery_image';
+            $stmt->close();
+            break;
+        }
+        $stmt->close();
     }
-    $stmt->close();
+}
+
+// 3.9 Fallback for known core static routes (e.g. blog, packages, gallery, activities, contact, about, home)
+if (!$pageData) {
+    $coreRoutes = [
+        'blog'       => 'Blog & Wildlife Stories',
+        'packages'   => 'Tour & Safari Packages',
+        'gallery'    => 'Photo & Video Gallery',
+        'activities' => 'Activities & Wildlife Experiences',
+        'contact'    => 'Contact Us',
+        'contact-us' => 'Contact Us',
+        'about'      => 'About Us',
+        'about-us'   => 'About Us',
+        'home'       => 'Home',
+        'index'      => 'Home'
+    ];
+
+    if (isset($coreRoutes[$slug])) {
+        $pageData = [
+            'id' => 0,
+            'title' => $coreRoutes[$slug],
+            'slug' => $slug,
+            'meta_title' => $coreRoutes[$slug] . ' | ' . $defaultTitle,
+            'meta_description' => $defaultDesc,
+            'meta_keywords' => $defaultKeywords,
+            'meta_image' => $defaultImage,
+            'canonical_url' => frontend_url('/' . ltrim($slug, '/')),
+            'robots' => 'index,follow',
+            'language_code' => 'en',
+            'translation_group' => null,
+            'hreflang_url' => null,
+            'status' => 'published'
+        ];
+        $type = 'page';
+    }
 }
 
 if (!$pageData) {

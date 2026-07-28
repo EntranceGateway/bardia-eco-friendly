@@ -22,9 +22,12 @@ if (!function_exists('cms_friendly_error')) {
     {
         if (!headers_sent()) {
             http_response_code(500);
+            $detailHtml = $detail
+                ? '<p style="margin-top:6px;font-size:.88rem;color:#b91c1c;font-weight:500;">' . htmlspecialchars($detail, ENT_QUOTES) . '</p>'
+                : '';
             $hintHtml = $hint
                 ? '<div style="margin-top:16px;padding:12px 16px;background:#f0f9f1;border:1px solid #a7d7ab;'
-                  . 'border-radius:8px;font-size:.82rem;color:#1b5e20;text-align:left;line-height:1.6;">'
+                  . 'border-radius:8px;font-size:.82rem;color:#1b5e20;text-align:left;line-height:1.6;word-break:break-word;">'
                   . nl2br(htmlspecialchars($hint, ENT_QUOTES)) . '</div>'
                 : '';
             echo <<<HTML
@@ -33,14 +36,14 @@ if (!function_exists('cms_friendly_error')) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Something went wrong — Bardiya Eco CMS</title>
+  <title>{$title} — Bardiya Eco CMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Inter',sans-serif;background:#f0f4f0;min-height:100vh;
          display:flex;align-items:center;justify-content:center;padding:24px}
     .box{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.1);
-         padding:40px 36px;max-width:480px;width:100%;text-align:center}
+         padding:40px 36px;max-width:520px;width:100%;text-align:center}
     .icon{font-size:2.8rem;margin-bottom:12px}
     h1{font-size:1.25rem;color:#1b5e20;margin-bottom:8px}
     p{font-size:.9rem;color:#6b7280;line-height:1.6}
@@ -52,8 +55,8 @@ if (!function_exists('cms_friendly_error')) {
 <body>
   <div class="box">
     <div class="icon">⚠️</div>
-    <h1>Something went wrong</h1>
-    <p>Please try again in a moment. If the problem persists, contact the system administrator.</p>
+    <h1>{$title}</h1>
+    {$detailHtml}
     {$hintHtml}
     <a href="javascript:history.back()">← Go Back</a>
   </div>
@@ -67,7 +70,11 @@ HTML;
     set_exception_handler(function (Throwable $e): void {
         error_log('[CMS Exception] ' . get_class($e) . ': ' . $e->getMessage()
                   . ' in ' . $e->getFile() . ':' . $e->getLine());
-        cms_friendly_error('Something went wrong');
+        cms_friendly_error(
+            'Application Exception',
+            $e->getMessage(),
+            "Error in " . basename($e->getFile()) . " on line " . $e->getLine()
+        );
     });
 
     set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline): bool {
@@ -82,7 +89,11 @@ HTML;
         $e = error_get_last();
         if ($e && ($e['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR))) {
             error_log('[CMS Fatal] ' . $e['message'] . ' in ' . $e['file'] . ':' . $e['line']);
-            cms_friendly_error('A critical error occurred');
+            cms_friendly_error(
+                'Fatal Server Error',
+                $e['message'],
+                "Error in " . basename($e['file']) . " on line " . $e['line']
+            );
         }
     });
 
@@ -91,8 +102,12 @@ HTML;
 // ── 3. Load environment ───────────────────────────────────────────────────────
 require_once __DIR__ . '/../vendor/autoload.php';
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->load();
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+    $dotenv->safeLoad();
+} else {
+    error_log('[CMS Env] .env file not found at project root.');
+}
 
 // ── 4. Database connection ────────────────────────────────────────────────────
 $db_host = $_ENV['DB_HOST'] ?? 'localhost';
@@ -106,13 +121,16 @@ $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
 
 if ($conn->connect_error) {
     error_log('[CMS DB] Connection failed: ' . $conn->connect_error);
+    $hasEnv = file_exists(__DIR__ . '/../.env');
+    $envNotice = $hasEnv 
+        ? "Check that credentials in your .env file are correct." 
+        : "⚠️ .env file is missing on the server! Please create a .env file in your server's root directory with DB_HOST, DB_NAME, DB_USER, DB_PASS, and BASE_URL.";
     cms_friendly_error(
         'Database unavailable',
         '',
         "🔴 Cannot connect to MySQL.\n"
-        . "If you are running locally, open XAMPP Control Panel and click Start next to MySQL.\n"
-        . "If MySQL is already running, check that the database '" . $db_name . "' exists "
-        . "and that credentials in your .env file are correct."
+        . "Error: " . $conn->connect_error . "\n\n"
+        . $envNotice
     );
 }
 

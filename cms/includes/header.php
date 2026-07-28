@@ -286,10 +286,14 @@ if (empty($_SESSION['cms_user_id'])) {
         <div class="nav-section">Blog</div>
         <a href="blog-categories.php" class="<?= $currentFile === 'blog-categories.php' ? 'active' : '' ?>">🗂️ Categories</a>
         <a href="blog-posts.php" class="<?= $currentFile === 'blog-posts.php' ? 'active' : '' ?>">📝 Posts</a>
+        <div class="nav-section">Activities</div>
+        <a href="activities.php" class="<?= $currentFile === 'activities.php' ? 'active' : '' ?>">🐘 Wildlife Experiences</a>
         <div class="nav-section">Pages</div>
         <a href="pages.php" class="<?= $currentFile === 'pages.php' ? 'active' : '' ?>">📄 Static Pages</a>
         <div class="nav-section">SEO</div>
         <a href="seo-settings.php" class="<?= $currentFile === 'seo-settings.php' ? 'active' : '' ?>">🔎 Global SEO</a>
+        <a href="page-seo.php" class="<?= $currentFile === 'page-seo.php' ? 'active' : '' ?>">📄 Page SEO</a>
+
         <div class="nav-section">Contact</div>
         <a href="contact-methods.php" class="<?= $currentFile === 'contact-methods.php' ? 'active' : '' ?>">📞 Methods</a>
         <a href="contact-submissions.php" class="<?= $currentFile === 'contact-submissions.php' ? 'active' : '' ?>">📬 Submissions</a>

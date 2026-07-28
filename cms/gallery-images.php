@@ -61,7 +61,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
 
                 if ($file['error'] !== UPLOAD_ERR_OK) {
-                    $errors[] = "File '{$file['name']}' failed to upload.";
+                    $errHint = match ($file['error']) {
+                        UPLOAD_ERR_INI_SIZE   => "Exceeds server's upload_max_filesize limit.",
+                        UPLOAD_ERR_FORM_SIZE  => "Exceeds maximum allowed form file size.",
+                        UPLOAD_ERR_PARTIAL    => "File was only partially uploaded.",
+                        UPLOAD_ERR_NO_FILE    => "No file was uploaded.",
+                        UPLOAD_ERR_NO_TMP_DIR => "Missing temporary upload folder on server.",
+                        UPLOAD_ERR_CANT_WRITE => "Failed to write file to server disk.",
+                        default               => "Upload error code: " . $file['error']
+                    };
+                    $errors[] = "File '{$file['name']}': {$errHint}";
                     continue;
                 }
 
@@ -81,20 +90,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $width  = (int) $imageSize[0];
                     $height = (int) $imageSize[1];
-                    $ext      = pathinfo($file['name'], PATHINFO_EXTENSION);
+                    $ext    = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
                     $filename = time() . '_' . $i . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
                     $uploadDir = __DIR__ . '/../storage/gallery/';
-                    if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+                    if (!is_dir($uploadDir)) @mkdir($uploadDir, 0775, true);
 
                     if (move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) {
-                        $imageUrl = '/storage/gallery/' . $filename;
-                        $altText  = trim($_POST['alt_text'] ?? '');
-                        $titleText = trim($_POST['title_text'] ?? '');
-                        $caption = trim($_POST['caption'] ?? '');
-                        $order    = (int) ($_POST['display_order'] ?? 0);
+                        $imageUrl  = '/storage/gallery/' . $filename;
+                        $rawTitle  = trim($_POST['title_text'] ?? '');
+                        $titleText = $rawTitle !== '' ? $rawTitle : ucfirst(str_replace(['_', '-'], ' ', pathinfo($file['name'], PATHINFO_FILENAME)));
+                        $altText   = trim($_POST['alt_text'] ?? '') ?: $titleText;
+                        $caption   = trim($_POST['caption'] ?? '');
+                        $order     = (int) ($_POST['display_order'] ?? 0);
                         
-                        $slug = strtolower(preg_replace('/[^a-z0-9-]/', '-', $titleText));
-                        
+                        // Generate unique slug per file to avoid UNIQUE key constraint collision on uk_galimg_slug
+                        $baseSlug = strtolower(preg_replace('/[^a-z0-9-]/', '-', $titleText));
+                        $baseSlug = trim(preg_replace('/-+/', '-', $baseSlug), '-');
+                        if (empty($baseSlug)) { $baseSlug = 'gallery-image'; }
+                        $slug = $baseSlug . '-' . time() . '-' . ($i + 1) . '-' . bin2hex(random_bytes(2));
+
                         try {
                             $stmt = $conn->prepare("INSERT INTO gallery_images (category_id, image_url, slug, alt_text, title_text, caption, width, height, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                             $stmt->bind_param('isssssiii', $categoryId, $imageUrl, $slug, $altText, $titleText, $caption, $width, $height, $order);
@@ -110,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $errors[] = "Database error for '{$file['name']}': " . $e->getMessage();
                         }
                     } else {
-                        $errors[] = "Failed to move '{$file['name']}' to storage.";
+                        $errors[] = "Failed to move '{$file['name']}' to storage folder ('storage/gallery/'). Please check directory permissions on the server.";
                     }
                 }
             }
@@ -191,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (!$error) {
                     $stmt = $conn->prepare("UPDATE gallery_images SET category_id = ?, slug = ?, alt_text = ?, title_text = ?, caption = ?, display_order = ?, is_active = ?, meta_title = ?, meta_description = ?, meta_keywords = ?, meta_image = ?, canonical_url = ?, robots = ? WHERE id = ?");
-                    $stmt->bind_param('issssiiissssssi', $categoryId, $slug, $altText, $titleText, $caption, $order, $isActive, $metaTitle, $metaDesc, $metaKeywords, $metaImage, $canonicalUrl, $robots, $id);
+                    $stmt->bind_param('issssiissssssi', $categoryId, $slug, $altText, $titleText, $caption, $order, $isActive, $metaTitle, $metaDesc, $metaKeywords, $metaImage, $canonicalUrl, $robots, $id);
                     if ($stmt->execute()) {
                         $conn->commit();
                         $success = 'Image updated.';
@@ -208,6 +222,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($conn->in_transaction) $conn->rollback();
             $error = 'Database error during update: ' . $e->getMessage();
         }
+    } elseif ($action === 'sync') {
+        $galleryDir = __DIR__ . '/../storage/gallery/';
+        $synced = 0;
+        if (is_dir($galleryDir)) {
+            $defaultCatId = 1;
+            $catCheck = $conn->query("SELECT id FROM gallery_categories WHERE is_active = 1 ORDER BY id ASC LIMIT 1");
+            if ($catCheck && $cRow = $catCheck->fetch_assoc()) {
+                $defaultCatId = (int) $cRow['id'];
+            }
+
+            $dbUrls = [];
+            $urlRes = $conn->query("SELECT image_url FROM gallery_images");
+            if ($urlRes) {
+                while ($u = $urlRes->fetch_assoc()) {
+                    $dbUrls[] = $u['image_url'];
+                }
+            }
+
+            $files = scandir($galleryDir);
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..' || strpos($file, '.') === 0) continue;
+                $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) continue;
+
+                $imageUrl = '/storage/gallery/' . $file;
+                if (!in_array($imageUrl, $dbUrls, true)) {
+                    $filePath = $galleryDir . $file;
+                    $width = 800; $height = 600;
+                    $imageSize = @getimagesize($filePath);
+                    if ($imageSize) {
+                        $width = (int) $imageSize[0];
+                        $height = (int) $imageSize[1];
+                    }
+
+                    $titleText = ucfirst(str_replace(['_', '-'], ' ', pathinfo($file, PATHINFO_FILENAME)));
+                    $slug = strtolower(preg_replace('/[^a-z0-9-]/', '-', $titleText));
+                    $slug = trim(preg_replace('/-+/', '-', $slug), '-');
+                    $altText = $titleText;
+                    $caption = 'Image ' . $file;
+
+                    $stmt = $conn->prepare("INSERT INTO gallery_images (category_id, image_url, slug, alt_text, title_text, caption, width, height, display_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 1)");
+                    $stmt->bind_param('isssssii', $defaultCatId, $imageUrl, $slug, $altText, $titleText, $caption, $width, $height);
+                    if ($stmt->execute()) {
+                        $synced++;
+                    }
+                    $stmt->close();
+                }
+            }
+        }
+        $success = "Synced $synced image(s) from disk into database.";
     }
 }
 
@@ -309,15 +373,21 @@ try {
 <div class="card">
     <div class="card-header">
         <h2>Gallery Images</h2>
-        <form method="GET" style="display:flex;gap:8px;align-items:center;">
-            <select name="category_id" class="form-control" style="width:auto;">
-                <option value="">All Categories</option>
-                <?php foreach ($categories as $c): ?>
-                    <option value="<?= $c['id'] ?>" <?= $c['id'] === $filterCat ? 'selected' : '' ?>><?= htmlspecialchars($c['name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
-        </form>
+        <div style="display:flex;gap:12px;align-items:center;">
+            <form method="POST" style="display:inline;">
+                <input type="hidden" name="action" value="sync">
+                <button type="submit" class="btn btn-secondary btn-sm" title="Register existing disk files in storage/gallery/ into database">🔄 Sync Storage Images</button>
+            </form>
+            <form method="GET" style="display:flex;gap:8px;align-items:center;">
+                <select name="category_id" class="form-control" style="width:auto;">
+                    <option value="">All Categories</option>
+                    <?php foreach ($categories as $c): ?>
+                        <option value="<?= $c['id'] ?>" <?= $c['id'] === $filterCat ? 'selected' : '' ?>><?= htmlspecialchars($c['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+            </form>
+        </div>
     </div>
     <!-- Desktop table -->
     <div class="tbl-wrap">
@@ -339,7 +409,7 @@ try {
                     <td><?= $img['display_order'] ?></td>
                     <td><?= $img['is_active'] ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-red">Inactive</span>' ?></td>
                     <td>
-                        <button class="btn btn-secondary btn-sm" onclick='openEdit(<?= htmlspecialchars(json_encode($img), ENT_QUOTES) ?>)'>Edit</button>
+                        <button class="btn btn-secondary btn-sm" data-img="<?= htmlspecialchars(json_encode($img), ENT_QUOTES, 'UTF-8') ?>" onclick="openEditFromBtn(this)">Edit</button>
                         <form method="POST" style="display:inline;" onsubmit="return confirmDelete()">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= $img['id'] ?>">
@@ -366,7 +436,7 @@ try {
                 <div class="m-row"><span>Title</span><span><?= htmlspecialchars($img['title_text'] ?? '—') ?></span></div>
                 <div class="m-row"><span>Active</span><span><?= $img['is_active'] ? 'Yes' : 'No' ?></span></div>
                 <div class="m-actions">
-                    <button class="btn btn-secondary btn-sm" onclick='openEdit(<?= htmlspecialchars(json_encode($img), ENT_QUOTES) ?>)'>Edit</button>
+                    <button class="btn btn-secondary btn-sm" data-img="<?= htmlspecialchars(json_encode($img), ENT_QUOTES, 'UTF-8') ?>" onclick="openEditFromBtn(this)">Edit</button>
                     <form method="POST" onsubmit="return confirmDelete()">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="id" value="<?= $img['id'] ?>">
@@ -470,6 +540,14 @@ try {
 </div>
 
 <script>
+function openEditFromBtn(btn) {
+    try {
+        var img = JSON.parse(btn.getAttribute('data-img'));
+        openEdit(img);
+    } catch (e) {
+        console.error('Failed to parse image data', e);
+    }
+}
 function openEdit(img) {
     document.getElementById('editModal').classList.add('active');
     document.getElementById('eId').value    = img.id;

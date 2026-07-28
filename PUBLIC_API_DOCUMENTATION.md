@@ -17,9 +17,10 @@ This documentation covers the public-facing API endpoints for integrating the Ba
 7. [Contact Methods](#contact-methods)
 8. [Social Links](#social-links)
 9. [Contact Submissions](#contact-submissions)
-10. [Pages](#pages)
-11. [Response Format](#response-format)
-12. [Error Handling](#error-handling)
+10. [Pages & Page SEO](#pages)
+11. [Activities & Wildlife Experiences](#activities)
+12. [Response Format](#response-format)
+13. [Error Handling](#error-handling)
 
 ---
 
@@ -898,6 +899,43 @@ Here's a complete example of integrating all public APIs into a website:
 
 ---
 
+## 🐘 Activities & Wildlife Experiences
+
+### List All Activities
+
+Get all 12 Wildlife Experiences / Activities.
+
+**Endpoint**: `GET /api/activities/list`
+
+**Authentication**: Not required (Public)
+
+**Response**:
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "title": "Jeep Safari",
+      "slug": "jeep-safari",
+      "icon": "🚙",
+      "shortDescription": "Discover the diverse landscapes of Bardia National Park on a guided jeep safari.",
+      "description": "Discover the diverse landscapes of Bardia National Park on a guided jeep safari. Travel deep into the wilderness in search of Royal Bengal Tigers, Greater One-horned Rhinoceroses, Wild Asian Elephants...",
+      "displayOrder": 1,
+      "isActive": true
+    }
+  ]
+}
+```
+
+### Get Activity Details
+
+Get details for a single activity by slug or ID.
+
+**Endpoint**: `GET /api/activities/get?slug=jeep-safari`
+
+---
+
 ## 📞 Support
 
 For API support or questions, contact:
@@ -909,3 +947,4 @@ For API support or questions, contact:
 **API Version**: 1.1  
 **Last Updated**: July 2026  
 **Base URL**: https://api.bardiaecofriendlyhomestay.com
+

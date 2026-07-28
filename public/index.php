@@ -50,6 +50,15 @@ $routes = [
 
     // Backend SEO
     '/api/page-seo/get'        => $apiDir . '/page-seo/get.php',
+    '/api/page-seo/update'     => $apiDir . '/page-seo/update.php',
+
+    // Activities / Wildlife Experiences
+    '/api/activities/list'     => $apiDir . '/activities/list.php',
+    '/api/activities/get'      => $apiDir . '/activities/get.php',
+    '/api/activities/create'   => $apiDir . '/activities/create.php',
+    '/api/activities/update'   => $apiDir . '/activities/update.php',
+    '/api/activities/delete'   => $apiDir . '/activities/delete.php',
+
     '/api/seo-settings/get'    => $apiDir . '/seo-settings/get.php',
     '/api/seo-settings/update' => $apiDir . '/seo-settings/update.php',
     '/api/faqs/list'           => $apiDir . '/faqs/list.php',
