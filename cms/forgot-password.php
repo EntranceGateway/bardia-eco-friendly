@@ -1,7 +1,6 @@
 <?php
 /**
- * CMS Forgot Password — Step 1
- * Request reset link via email
+ * CMS Forgot Password — Step 1 (Modern Redesign)
  */
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
@@ -49,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p>Hello {$user['username']},</p>
                     <p>We received a request to reset your password for Bardiya Eco CMS.</p>
                     <p>Click the link below to reset your password. This link will expire in 1 hour.</p>
-                    <p><a href='$resetUrl' style='display:inline-block;background:#2e7d32;color:#fff;padding:10px 20px;text-decoration:none;border-radius:5px;'>Reset Password</a></p>
+                    <p><a href='$resetUrl' style='display:inline-block;background:#059669;color:#fff;padding:10px 20px;text-decoration:none;border-radius:8px;'>Reset Password</a></p>
                     <p>If you didn't request this, you can safely ignore this email.</p>
                 ";
 
@@ -59,14 +58,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $success = 'If an account exists with that email, a reset link has been sent.';
                 } else {
                     $error = 'Failed to send email. Please try again later.';
-                    // logError('Forgot password email failed: ' . $mailResult['error']);
                 }
             } else {
                 $error = 'An error occurred. Please try again.';
             }
             $stmt->close();
         } else {
-            // Standard security: don't reveal if email exists or not
             $success = 'If an account exists with that email, a reset link has been sent.';
         }
     }
@@ -78,27 +75,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forgot Password — Bardiya Eco CMS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        body{font-family:'Inter',sans-serif;background:#f0f4f0;min-height:100vh;display:flex;align-items:center;justify-content:center;}
-        .login-wrap{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.1);padding:40px 36px;width:min(400px,94vw);}
-        .login-brand{text-align:center;margin-bottom:24px;}
-        .login-brand h1{font-size:1.3rem;color:#1b5e20;margin-top:6px;}
-        .alert-error{background:#ffebee;border:1px solid #ef9a9a;color:#b71c1c;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.88rem;}
-        .alert-success{background:#e8f5e9;border:1px solid #a5d6a7;color:#1b5e20;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.88rem;}
-        .form-group{margin-bottom:16px;}
-        .form-group label{display:block;font-size:.85rem;font-weight:500;margin-bottom:5px;}
-        .form-group input{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;font-size:.9rem;}
-        .btn-login{width:100%;padding:11px;background:#2e7d32;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.95rem;font-weight:600;cursor:pointer;}
-        .back-link{display:block;text-align:center;margin-top:16px;font-size:.88rem;color:#6b7280;text-decoration:none;}
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at 80% 20%, #065f46 0%, #044e39 35%, #022c22 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .ambient-glow {
+            position: absolute; width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(0,0,0,0) 70%);
+            top: 10%; left: 15%; filter: blur(50px); pointer-events: none;
+        }
+
+        .login-wrap {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+            padding: 44px 40px;
+            width: min(440px, 94vw);
+            z-index: 10;
+        }
+
+        .login-brand { text-align: center; margin-bottom: 28px; }
+        .login-brand h1 { font-size: 1.45rem; font-weight: 800; color: #0f172a; }
+        .login-brand p { font-size: 0.88rem; color: #64748b; margin-top: 4px; }
+
+        .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.86rem; }
+        .alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.86rem; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.84rem; font-weight: 600; color: #334155; margin-bottom: 8px; }
+        .form-group input {
+            width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px;
+            font-family: inherit; font-size: 0.92rem; color: #0f172a; background: #f8fafc;
+            transition: all 0.2s ease;
+        }
+        .form-group input:focus { outline: none; border-color: #059669; background: #ffffff; box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.12); }
+
+        .btn-login {
+            width: 100%; padding: 13px; background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: #ffffff; border: none; border-radius: 12px; font-family: inherit; font-size: 0.95rem; font-weight: 700;
+            cursor: pointer; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35); transition: all 0.2s ease;
+        }
+        .btn-login:hover { background: linear-gradient(135deg, #047857 0%, #064e3b 100%); transform: translateY(-1px); }
+
+        .back-link { display: block; text-align: center; margin-top: 20px; font-size: 0.84rem; font-weight: 600; color: #059669; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
+
+<div class="ambient-glow"></div>
+
 <div class="login-wrap">
     <div class="login-brand">
-        <h1>Forgot Password</h1>
-        <p style="font-size:.85rem;color:#666;">Enter your official email to receive a reset link</p>
+        <div style="font-size: 2rem; margin-bottom: 8px;">🔑</div>
+        <h1>Reset Your Password</h1>
+        <p>Enter your administrator email to receive a secure recovery link</p>
     </div>
     
     <?php if ($error): ?>
@@ -112,10 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="POST">
         <div class="form-group">
             <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" required placeholder="admin@example.com">
+            <input type="email" id="email" name="email" required placeholder="admin@bardiaecofriendly.com" autofocus>
         </div>
-        <button type="submit" class="btn-login">Send Reset Link</button>
-        <a href="login.php" class="back-link">← Back to Login</a>
+        <button type="submit" class="btn-login">Send Password Reset Link</button>
+        <a href="login.php" class="back-link">&larr; Back to Login</a>
     </form>
 </div>
 </body>

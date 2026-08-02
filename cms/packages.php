@@ -150,8 +150,36 @@ $currencyOptions = ['₹' => '₹ (NPR)', '$' => '$ (USD)', '€' => '€ (EUR)'
     <div class="alert alert-error">No categories found. <a href="package-categories.php">Create a category first.</a></div>
 <?php else: ?>
 
-<div style="margin-bottom:16px;">
-    <button class="btn btn-primary" onclick="openModal()">+ Add Package</button>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-info">
+            <span class="stat-val"><?= count($packages) ?></span>
+            <span class="stat-lbl">Total Packages</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📂</div>
+        <div class="stat-info">
+            <span class="stat-val"><?= count($pkgCategories) ?></span>
+            <span class="stat-lbl">Active Categories</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-info">
+            <span class="stat-val"><?= count(array_filter($packages, fn($p) => !empty($p['is_featured']))) ?></span>
+            <span class="stat-lbl">Featured Packages</span>
+        </div>
+    </div>
+</div>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h2 style="font-size:1.1rem; font-weight:700;">Package List</h2>
+    <button class="btn btn-primary" onclick="openModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Add New Package
+    </button>
 </div>
 
 <div class="card">

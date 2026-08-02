@@ -62,8 +62,34 @@ function seo_value(array $settings, string $key, string $fallback = ''): string
 <?php if ($success): ?><div class="alert alert-success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert alert-error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">🔎</div>
+        <div class="stat-info">
+            <span class="stat-val"><?= seo_value($settings, 'site_name', 'Bardiya Eco') ?></span>
+            <span class="stat-lbl">Site Identity</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-info">
+            <span class="stat-val"><?= seo_value($settings, 'aggregate_rating_value', '5.0') ?> / 5.0</span>
+            <span class="stat-lbl">Aggregate Rating (<?= seo_value($settings, 'aggregate_rating_count', '120') ?> reviews)</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🤖</div>
+        <div class="stat-info">
+            <span class="stat-val"><?= ($settings['google_reviews_enabled'] ?? '1') === '1' ? 'Enabled' : 'Disabled' ?></span>
+            <span class="stat-lbl">Google Review Widget</span>
+        </div>
+    </div>
+</div>
+
 <form method="POST" class="card">
-    <div class="card-header"><h2>Site Defaults</h2></div>
+    <div class="card-header">
+        <h2>Global Meta & Search Configuration</h2>
+    </div>
     <div class="card-body">
         <div class="form-row">
             <div class="form-group">
@@ -109,7 +135,10 @@ function seo_value(array $settings, string $key, string $fallback = ''): string
             <input type="checkbox" id="reviewsEnabled" name="google_reviews_enabled" value="1" <?= ($settings['google_reviews_enabled'] ?? '1') === '1' ? 'checked' : '' ?>>
             <label for="reviewsEnabled">Enable Google Reviews integration</label>
         </div>
-        <button class="btn btn-primary" type="submit">Save SEO Settings</button>
+        <button class="btn btn-primary" type="submit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            Save Global SEO Settings
+        </button>
     </div>
 </form>
 

@@ -22,13 +22,16 @@ $cmsBase    = ($cmsPos !== false)
     ? substr($scriptPath, 0, $cmsPos + 5)   // keeps the trailing slash after /cms/
     : '/bardiya-eco-friendly/cms/';
 
-$pageTitle  = $pageTitle ?? 'CMS';
+$pageTitle  = $pageTitle ?? 'CMS Dashboard';
 
 // Redirect to login if not authenticated
 if (empty($_SESSION['cms_user_id'])) {
     header('Location: ' . $cmsBase . 'login.php');
     exit;
 }
+
+$adminUsername = htmlspecialchars($_SESSION['cms_username'] ?? 'Admin');
+$adminInitial  = strtoupper(substr($adminUsername, 0, 1));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -37,234 +40,13 @@ if (empty($_SESSION['cms_user_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?> — Bardiya Eco CMS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?= $cmsBase ?>assets/css/admin.css">
     <script>
         // Use PHP's detected or configured base URL for API requests
         const API_BASE_URL = '<?= rtrim($baseUrl, "/") ?>/public/index.php';
     </script>
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --brand:    #2e7d32;
-            --brand-dk: #1b5e20;
-            --brand-lt: #e8f5e9;
-            --danger:   #c62828;
-            --warn:     #f57c00;
-            --text:     #1a1a1a;
-            --muted:    #6b7280;
-            --border:   #d1d5db;
-            --bg:       #f9fafb;
-            --white:    #ffffff;
-            --sidebar-w: 220px;
-            --radius:   8px;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* ── Sidebar ── */
-        .cms-sidebar {
-            width: var(--sidebar-w);
-            background: var(--brand-dk);
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            top: 0; left: 0;
-            height: 100vh;
-            z-index: 100;
-            transition: transform .25s;
-        }
-        .cms-sidebar .brand {
-            padding: 20px 16px;
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 700;
-            border-bottom: 1px solid rgba(255,255,255,.15);
-            line-height: 1.3;
-        }
-        .cms-sidebar .brand small { font-size: .7rem; font-weight: 400; opacity: .7; display: block; }
-        .cms-sidebar nav { flex: 1; padding: 12px 0; overflow-y: auto; }
-        .cms-sidebar nav a {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 16px;
-            color: rgba(255,255,255,.8);
-            text-decoration: none;
-            font-size: .88rem;
-            transition: background .15s;
-            border-left: 3px solid transparent;
-        }
-        .cms-sidebar nav a:hover, .cms-sidebar nav a.active {
-            background: rgba(255,255,255,.12);
-            color: #fff;
-            border-left-color: #a5d6a7;
-        }
-        .cms-sidebar nav .nav-section {
-            font-size: .68rem; font-weight: 600; letter-spacing: .08em;
-            color: rgba(255,255,255,.4); text-transform: uppercase;
-            padding: 14px 16px 4px;
-        }
-        .cms-sidebar .logout {
-            padding: 12px 16px;
-            border-top: 1px solid rgba(255,255,255,.15);
-        }
-        .cms-sidebar .logout a {
-            color: rgba(255,255,255,.7); font-size: .84rem; text-decoration: none;
-        }
-        .cms-sidebar .logout a:hover { color: #fff; }
-
-        /* ── Mobile hamburger ── */
-        .hamburger {
-            display: none;
-            background: var(--brand-dk); color: #fff;
-            border: none; border-radius: var(--radius);
-            padding: 8px 12px; cursor: pointer; font-size: 1.2rem;
-            align-items: center; justify-content: center;
-            transition: background .2s;
-        }
-        .hamburger:hover { background: var(--brand); }
-        .overlay {
-            display: none;
-            position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 99;
-        }
-
-        /* ── Main content ── */
-        .cms-main {
-            margin-left: var(--sidebar-w);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        .cms-topbar {
-            background: var(--white);
-            border-bottom: 1px solid var(--border);
-            padding: 12px 24px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            position: sticky;
-            top: 0;
-            z-index: 90;
-        }
-        .cms-topbar h1 { font-size: 1.05rem; font-weight: 600; flex: 1; }
-        .cms-content { padding: 24px; flex: 1; }
-
-        /* ── Alerts ── */
-        .alert {
-            padding: 12px 16px; border-radius: var(--radius);
-            margin-bottom: 16px; font-size: .9rem;
-            border: 1px solid transparent;
-        }
-        .alert-success { background:#e8f5e9; border-color:#a5d6a7; color:#1b5e20; }
-        .alert-error   { background:#ffebee; border-color:#ef9a9a; color:#b71c1c; }
-
-        /* ── Cards / Table ── */
-        .card {
-            background: var(--white); border-radius: var(--radius);
-            border: 1px solid var(--border); overflow: hidden;
-        }
-        .card-header {
-            padding: 16px 20px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--border);
-        }
-        .card-header h2 { font-size: 1rem; font-weight: 600; }
-        .card-body { padding: 20px; }
-
-        /* ── Table ── */
-        .tbl-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-        th { background: var(--bg); text-align: left; padding: 10px 14px;
-             font-weight: 600; border-bottom: 1px solid var(--border); }
-        td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover td { background: #fafffe; }
-
-        /* ── Mobile card list ── */
-        .m-cards { display: none; gap: 12px; flex-direction: column; }
-        .m-card {
-            background: var(--white); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 14px 16px;
-        }
-        .m-card .m-title { font-weight: 600; margin-bottom: 6px; font-size: .95rem; }
-        .m-card .m-row { display: flex; justify-content: space-between;
-            font-size: .84rem; padding: 2px 0; color: var(--muted); }
-        .m-card .m-row span:last-child { color: var(--text); text-align: right; }
-        .m-card .m-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
-
-        /* ── Responsive breakpoint ── */
-        @media (max-width: 768px) {
-            .cms-sidebar { transform: translateX(-100%); }
-            .cms-sidebar.open { transform: translateX(0); }
-            .hamburger { display: flex; }
-            .overlay.active { display: block; }
-            .cms-main { margin-left: 0; }
-            .cms-topbar { padding: 10px 16px; }
-            .tbl-wrap table { display: none; }
-            .m-cards { display: flex; }
-        }
-
-        /* ── Buttons ── */
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 14px; border-radius: var(--radius);
-            border: 1px solid transparent; cursor: pointer;
-            font-size: .84rem; font-weight: 500; text-decoration: none;
-            transition: opacity .15s, box-shadow .15s;
-            font-family: inherit;
-        }
-        .btn:hover { opacity: .88; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
-        .btn-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
-        .btn-secondary { background: var(--white); color: var(--text); border-color: var(--border); }
-        .btn-danger  { background: var(--danger); color: #fff; border-color: var(--danger); }
-        .btn-sm { padding: 5px 10px; font-size: .8rem; }
-
-        /* ── Forms ── */
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: .85rem; font-weight: 500; margin-bottom: 5px; }
-        .form-control {
-            width: 100%; padding: 9px 12px;
-            border: 1px solid var(--border); border-radius: var(--radius);
-            font-family: inherit; font-size: .9rem;
-            transition: border-color .15s;
-        }
-        .form-control:focus { outline: none; border-color: var(--brand); }
-        select.form-control { background: var(--white); }
-        .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
-        .form-row .form-group { flex: 1; min-width: 200px; }
-        .check-group { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-        .check-group input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--brand); }
-
-        /* ── Modal ── */
-        .modal-backdrop {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,.45); z-index: 300;
-            align-items: center; justify-content: center;
-        }
-        .modal-backdrop.active { display: flex; }
-        .modal {
-            background: var(--white); border-radius: var(--radius);
-            width: min(560px, 96vw); max-height: 90vh; overflow-y: auto;
-            padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,.18);
-        }
-        .modal h3 { font-size: 1.05rem; margin-bottom: 16px; }
-        .modal-footer { margin-top: 16px; display: flex; gap: 10px; justify-content: flex-end; }
-
-        /* ── Badge ── */
-        .badge {
-            display: inline-block; font-size: .72rem; font-weight: 600;
-            padding: 2px 8px; border-radius: 99px;
-        }
-        .badge-green { background: #e8f5e9; color: #2e7d32; }
-        .badge-red   { background: #ffebee; color: #c62828; }
-        .badge-gold  { background: #fff8e1; color: #f57c00; }
-    </style>
 </head>
 <body>
 
@@ -272,43 +54,122 @@ if (empty($_SESSION['cms_user_id'])) {
 
 <aside class="cms-sidebar" id="sidebar">
     <div class="brand">
-        🌿 Bardiya Eco
-        <small>Admin Panel</small>
+        <div class="brand-icon">🌿</div>
+        <div class="brand-text">
+            <span class="brand-title">Bardiya Eco</span>
+            <span class="brand-sub">CMS Portal v2.0</span>
+        </div>
     </div>
+    
     <nav>
         <div class="nav-section">Packages</div>
-        <a href="package-categories.php" class="<?= $currentFile === 'package-categories.php' ? 'active' : '' ?>">🗂️ Categories</a>
-        <a href="packages.php" class="<?= $currentFile === 'packages.php' ? 'active' : '' ?>">📦 Packages</a>
-        <a href="package-features.php" class="<?= $currentFile === 'package-features.php' ? 'active' : '' ?>">✅ Features</a>
-        <div class="nav-section">Gallery</div>
-        <a href="gallery-categories.php" class="<?= $currentFile === 'gallery-categories.php' ? 'active' : '' ?>">🗂️ Categories</a>
-        <a href="gallery-images.php" class="<?= $currentFile === 'gallery-images.php' ? 'active' : '' ?>">🖼️ Images</a>
-        <div class="nav-section">Blog</div>
-        <a href="blog-categories.php" class="<?= $currentFile === 'blog-categories.php' ? 'active' : '' ?>">🗂️ Categories</a>
-        <a href="blog-posts.php" class="<?= $currentFile === 'blog-posts.php' ? 'active' : '' ?>">📝 Posts</a>
-        <div class="nav-section">Activities</div>
-        <a href="activities.php" class="<?= $currentFile === 'activities.php' ? 'active' : '' ?>">🐘 Wildlife Experiences</a>
-        <div class="nav-section">Pages</div>
-        <a href="pages.php" class="<?= $currentFile === 'pages.php' ? 'active' : '' ?>">📄 Static Pages</a>
-        <div class="nav-section">SEO</div>
-        <a href="seo-settings.php" class="<?= $currentFile === 'seo-settings.php' ? 'active' : '' ?>">🔎 Global SEO</a>
-        <a href="page-seo.php" class="<?= $currentFile === 'page-seo.php' ? 'active' : '' ?>">📄 Page SEO</a>
+        <a href="package-categories.php" class="<?= $currentFile === 'package-categories.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            Categories
+        </a>
+        <a href="packages.php" class="<?= $currentFile === 'packages.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            Packages
+        </a>
+        <a href="package-features.php" class="<?= $currentFile === 'package-features.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            Features
+        </a>
 
-        <div class="nav-section">Contact</div>
-        <a href="contact-methods.php" class="<?= $currentFile === 'contact-methods.php' ? 'active' : '' ?>">📞 Methods</a>
-        <a href="contact-submissions.php" class="<?= $currentFile === 'contact-submissions.php' ? 'active' : '' ?>">📬 Submissions</a>
-        <a href="social-links.php" class="<?= $currentFile === 'social-links.php' ? 'active' : '' ?>">🔗 Social Links</a>
+        <div class="nav-section">Gallery</div>
+        <a href="gallery-categories.php" class="<?= $currentFile === 'gallery-categories.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            Categories
+        </a>
+        <a href="gallery-images.php" class="<?= $currentFile === 'gallery-images.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            Images
+        </a>
+
+        <div class="nav-section">Blog</div>
+        <a href="blog-categories.php" class="<?= $currentFile === 'blog-categories.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            Categories
+        </a>
+        <a href="blog-posts.php" class="<?= $currentFile === 'blog-posts.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            Posts
+        </a>
+
+        <div class="nav-section">Activities & Wildlife</div>
+        <a href="activities.php" class="<?= $currentFile === 'activities.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            Wildlife Experiences
+        </a>
+
+        <div class="nav-section">Static Pages & SEO</div>
+        <a href="pages.php" class="<?= $currentFile === 'pages.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            Pages
+        </a>
+        <a href="seo-settings.php" class="<?= $currentFile === 'seo-settings.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Global SEO
+        </a>
+        <a href="page-seo.php" class="<?= $currentFile === 'page-seo.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            Page SEO Meta
+        </a>
+
+        <div class="nav-section">Contact & Messaging</div>
+        <a href="contact-methods.php" class="<?= $currentFile === 'contact-methods.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            Contact Methods
+        </a>
+        <a href="contact-submissions.php" class="<?= $currentFile === 'contact-submissions.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            Submissions
+        </a>
+        <a href="social-links.php" class="<?= $currentFile === 'social-links.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            Social Links
+        </a>
+
         <div class="nav-section">Account</div>
-        <a href="profile.php" class="<?= $currentFile === 'profile.php' ? 'active' : '' ?>">👤 My Profile</a>
+        <a href="profile.php" class="<?= $currentFile === 'profile.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            My Profile
+        </a>
     </nav>
-    <div class="logout">
-        <a href="logout.php">⎋ Logout (<?= htmlspecialchars($_SESSION['cms_username'] ?? 'Admin') ?>)</a>
+
+    <div class="user-profile">
+        <div class="user-info">
+            <div class="user-avatar"><?= $adminInitial ?></div>
+            <div class="user-details">
+                <span class="user-name"><?= $adminUsername ?></span>
+                <span class="user-role">Administrator</span>
+            </div>
+        </div>
+        <a href="logout.php" class="btn-logout" title="Sign Out">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </a>
     </div>
 </aside>
 
 <main class="cms-main">
     <div class="cms-topbar">
-        <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">☰</button>
-        <h1><?= htmlspecialchars($pageTitle) ?></h1>
+        <div class="left-group">
+            <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle Sidebar Navigation">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div class="page-title-wrap">
+                <h1><?= htmlspecialchars($pageTitle) ?></h1>
+                <div class="breadcrumbs">
+                    <span>Admin</span> &rsaquo; <span><?= htmlspecialchars($pageTitle) ?></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-group">
+            <div class="search-bar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Search records..." id="cmsQuickSearch">
+            </div>
+        </div>
     </div>
     <div class="cms-content">
