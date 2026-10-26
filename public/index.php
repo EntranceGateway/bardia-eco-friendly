@@ -52,6 +52,9 @@ $routes = [
     '/api/page-seo/get'        => $apiDir . '/page-seo/get.php',
     '/api/page-seo/update'     => $apiDir . '/page-seo/update.php',
 
+    // About Us page
+    '/api/about/get'          => $apiDir . '/about/get.php',
+
     // Activities / Wildlife Experiences
     '/api/activities/list'     => $apiDir . '/activities/list.php',
     '/api/activities/get'      => $apiDir . '/activities/get.php',

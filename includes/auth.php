@@ -26,6 +26,10 @@ function requireAuth(): object
     }
 
     if (!empty($_SESSION['cms_user_id'])) {
+        // Cookie auth is sent by the browser automatically, so writes must prove they came from the CMS
+        if (getRequestMethod() !== 'GET' && !csrf_valid($_SERVER['HTTP_X_CSRF_TOKEN'] ?? null)) {
+            jsonResponse(403, 'error', null, 'Invalid or missing CSRF token.');
+        }
         return (object)[
             'user_id' => (int)$_SESSION['cms_user_id'],
             'role'    => 'admin' // CMS users are typically admins
@@ -46,4 +50,10 @@ function requireRole(array $allowedRoles): object
     }
 
     return $auth;
+}
+
+// Used by admin-only endpoints (activities, page SEO)
+function requireAdmin(): object
+{
+    return requireRole(['admin']);
 }

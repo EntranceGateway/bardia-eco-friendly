@@ -30,6 +30,16 @@ if (empty($_SESSION['cms_user_id'])) {
     exit;
 }
 
+// Reject forged cross-site form posts (token is injected into every POST form by footer.php)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_valid($_POST['csrf_token'] ?? null)) {
+    // An upload over post_max_size arrives with an empty $_POST, so the token looks missing
+    $tooLarge = empty($_POST) && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0;
+    http_response_code($tooLarge ? 413 : 403);
+    exit($tooLarge
+        ? 'The upload is too large for the server. Go back and choose a smaller file.'
+        : 'Your session expired or the request was invalid. Go back, refresh the page and try again.');
+}
+
 $adminUsername = htmlspecialchars($_SESSION['cms_username'] ?? 'Admin');
 $adminInitial  = strtoupper(substr($adminUsername, 0, 1));
 ?>
@@ -37,6 +47,7 @@ $adminInitial  = strtoupper(substr($adminUsername, 0, 1));
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token()) ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?> — Bardiya Eco CMS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,6 +114,10 @@ $adminInitial  = strtoupper(substr($adminUsername, 0, 1));
         </a>
 
         <div class="nav-section">Static Pages & SEO</div>
+        <a href="about.php" class="<?= $currentFile === 'about.php' ? 'active' : '' ?>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a7 7 0 0 1 14 0v1"></path></svg>
+            About Page
+        </a>
         <a href="pages.php" class="<?= $currentFile === 'pages.php' ? 'active' : '' ?>">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
             Pages

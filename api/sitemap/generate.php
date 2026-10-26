@@ -8,6 +8,8 @@ if (getRequestMethod() !== 'GET') {
 
 $urls = [
     ['slug' => 'home', 'loc' => frontend_url('/'), 'priority' => '1.0', 'changefreq' => 'weekly', 'lastmod' => date('Y-m-d'), 'alternates' => []],
+    ['slug' => 'about', 'loc' => frontend_url('/about'), 'priority' => '0.7', 'changefreq' => 'monthly', 'lastmod' => date('Y-m-d'), 'alternates' => []],
+    ['slug' => 'activities', 'loc' => frontend_url('/activities'), 'priority' => '0.8', 'changefreq' => 'weekly', 'lastmod' => date('Y-m-d'), 'alternates' => []],
     ['slug' => 'gallery', 'loc' => frontend_url('/gallery'), 'priority' => '0.8', 'changefreq' => 'weekly', 'lastmod' => date('Y-m-d'), 'alternates' => []],
     ['slug' => 'farm-to-table', 'loc' => frontend_url('/farm-to-table'), 'priority' => '0.7', 'changefreq' => 'monthly', 'lastmod' => date('Y-m-d'), 'alternates' => []],
     ['slug' => 'packages', 'loc' => frontend_url('/packages'), 'priority' => '0.9', 'changefreq' => 'weekly', 'lastmod' => date('Y-m-d'), 'alternates' => []],
@@ -39,7 +41,7 @@ $result = $conn->query("SELECT slug, updated_at, translation_group FROM pages WH
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $slug = trim($row['slug'], '/');
-        if (in_array($slug, ['home', 'gallery', 'farm-to-table', 'packages', 'blog', 'contact'], true)) {
+        if (in_array($slug, ['home', 'about', 'activities', 'gallery', 'farm-to-table', 'packages', 'blog', 'contact'], true)) {
             continue;
         }
         $urls[] = [

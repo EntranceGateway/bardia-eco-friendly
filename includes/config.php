@@ -186,3 +186,28 @@ if (!function_exists('db_query')) {
         return $result;
     }
 }
+
+// ── Session cookie hardening + CSRF helpers ──────────────────────────────────
+// Runs before every session_start() in the CMS and API (config.php is loaded first).
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+    session_set_cookie_params([
+        'httponly' => true,
+        'samesite' => 'Lax', // browser won't send the admin cookie on cross-site POSTs
+        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    ]);
+}
+
+if (!function_exists('csrf_token')) {
+    function csrf_token(): string
+    {
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['csrf_token'];
+    }
+
+    function csrf_valid(?string $token): bool
+    {
+        return !empty($_SESSION['csrf_token']) && is_string($token) && hash_equals($_SESSION['csrf_token'], $token);
+    }
+}

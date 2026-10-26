@@ -2,6 +2,16 @@
 </main><!-- /.cms-main -->
 
 <script>
+// Add the CSRF token to every POST form (checked in header.php)
+document.querySelectorAll('form').forEach(function(form) {
+    if (form.method.toLowerCase() !== 'post') return;
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'csrf_token';
+    input.value = document.querySelector('meta[name="csrf-token"]').content;
+    form.appendChild(input);
+});
+
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('active');

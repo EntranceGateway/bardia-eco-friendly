@@ -92,7 +92,7 @@ function setCorsHeaders(): void
     }
     
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token');
     header('Vary: Origin');
     header('X-Content-Type-Options: nosniff');
     header('Referrer-Policy: strict-origin-when-cross-origin');
@@ -145,4 +145,44 @@ function asset_url(string $path): string
     
     // Combine base URL with the asset path
     return $baseUrl . $path;
+}
+
+/**
+ * Strip scripts, event handlers and javascript: URLs from rich-text HTML (blog content).
+ * ponytail: denylist, not a full allowlist sanitizer; swap for HTML Purifier if non-admins ever author content.
+ */
+function sanitize_html(string $html): string
+{
+    if (trim($html) === '') {
+        return '';
+    }
+
+    $doc = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $doc->loadHTML('<?xml encoding="UTF-8"><div id="__root">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+
+    $xpath = new DOMXPath($doc);
+    foreach ($xpath->query('//script|//style|//iframe|//object|//embed|//form|//input|//button|//link|//meta|//base') as $node) {
+        $node->parentNode->removeChild($node);
+    }
+
+    foreach ($xpath->query('//@*') as $attr) {
+        $name  = strtolower($attr->nodeName);
+        $value = strtolower(preg_replace('/[\s\x00-\x1f]+/', '', $attr->nodeValue));
+        $isUrl = in_array($name, ['href', 'src', 'xlink:href', 'action', 'formaction'], true);
+        $badUrl = $isUrl && (strpos($value, 'javascript:') === 0 || strpos($value, 'vbscript:') === 0
+            || (strpos($value, 'data:') === 0 && strpos($value, 'data:image/') !== 0));
+
+        if (strpos($name, 'on') === 0 || $name === 'srcdoc' || $badUrl) {
+            $attr->ownerElement->removeAttributeNode($attr);
+        }
+    }
+
+    $root = $doc->getElementById('__root');
+    $out = '';
+    foreach ($root->childNodes as $child) {
+        $out .= $doc->saveHTML($child);
+    }
+    return $out;
 }

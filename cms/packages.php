@@ -103,7 +103,7 @@ try {
     $error = 'Could not load packages. Please try again.';
 }
 
-$currencyOptions = ['₹' => '₹ (NPR)', '$' => '$ (USD)', '€' => '€ (EUR)', '£' => '£ (GBP)'];
+$currencyOptions = ['₹' => 'Rs. (NPR)', '$' => '$ (USD)', '€' => '€ (EUR)', '£' => '£ (GBP)'];
 ?>
 
 <style>

@@ -38,6 +38,7 @@ $post['category_id']   = (int)  $post['category_id'];
 $post['is_featured']   = (bool) $post['is_featured'];
 $post['display_order'] = (int)  $post['display_order'];
 $post['is_active']     = (bool) $post['is_active'];
+$post['content']       = sanitize_html($post['content'] ?? '');
 if ($post['featured_image']) {
     $post['featured_image_url'] = asset_url($post['featured_image']);
 } else {

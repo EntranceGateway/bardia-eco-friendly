@@ -391,7 +391,8 @@ async function sendEmail(event) {
         const response = await fetch(`${API_BASE_URL}/api/emails/send-reply`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
             },
             body: JSON.stringify({
                 submission_id: parseInt(submissionId),
