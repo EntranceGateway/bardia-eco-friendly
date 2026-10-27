@@ -452,6 +452,8 @@ CREATE TABLE IF NOT EXISTS `about_sections` (
     `image_url`     VARCHAR(500)  DEFAULT NULL,
     `image_alt`     VARCHAR(255)  DEFAULT NULL,
     `icon`          VARCHAR(1000) DEFAULT NULL,
+    `phone`         VARCHAR(50)   DEFAULT NULL,
+    `email`         VARCHAR(255)  DEFAULT NULL,
     `display_order` INT           NOT NULL DEFAULT 0,
     `is_active`     TINYINT(1)    NOT NULL DEFAULT 1,
     `created_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -493,3 +495,10 @@ INSERT INTO `about_sections` (`section_type`, `title`, `subtitle`, `body`, `imag
 ('team', 'Our Kitchen', 'Farm-to-table cooking',
  'Home-style Nepali and Tharu meals, cooked fresh every day with produce from our farm.',
  '/gallery/homestay3.jpg', 'Homestay kitchen and dining area', NULL, 3);
+
+INSERT INTO `about_sections` (`section_type`, `title`, `subtitle`, `body`, `image_url`, `image_alt`, `phone`, `email`, `display_order`) VALUES
+('owner', 'Shardul Bhattarai',
+ 'Wildlife Guide | Safari Specialist | Wildlife Photographer | Human-Wildlife Coexistence Advocate',
+ 'Shardul Bhattarai is a passionate wildlife professional based in the Bardia region of Nepal, with experience in wildlife tourism since 2014. Through his work as a safari guide, photographer, and tourism entrepreneur, he is dedicated to showcasing Nepal''s rich biodiversity while promoting responsible wildlife tourism and conservation awareness.\n\n• Wildlife & Safari Expertise: Experienced in wildlife tracking, tiger observation, and guiding visitors through the natural habitats of Bardia National Park.\n• Human-Wildlife Conflict Support: Committed to supporting people affected by human-wildlife conflict and advocating for practical solutions that protect local communities while conserving wildlife.\n• Wildlife Photography: Captures the beauty, behaviour, and ecological importance of wildlife to inspire conservation awareness.\n• Sustainable Tourism: Owner of Bardia Eco Friendly Homestay, promoting authentic local hospitality, nature-based tourism, and meaningful cultural experiences.\n• Communication Skills: Excellent English communication skills and the ability to speak Japanese, helping connect international visitors with Nepal''s wildlife and local communities.\n• Conservation Vision: Dedicated to strengthening the relationship between people and nature, encouraging peaceful coexistence, and promoting the long-term conservation of Bardia''s unique ecosystems.',
+ '/gallery/shardul-bhattarai.webp', 'Shardul Bhattarai with binoculars beside a safari jeep in Bardia National Park',
+ '+977 9842364787', 'shardul.bhattarai@gmail.com', 1);

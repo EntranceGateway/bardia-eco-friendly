@@ -13,6 +13,7 @@ $error   = '';
 
 $sectionTypes = [
     'hero'  => ['label' => 'Hero',          'help' => 'Top of the page. Only the first active row is shown. Subtitle = intro sentence.'],
+    'owner' => ['label' => 'Owner Profile', 'help' => 'Only the first active row is shown. Title = name, Subtitle = roles separated by |, Body = bio paragraphs, then one highlight per line starting with • (e.g. "• Wildlife Photography: Captures..."). Phone and email are shown as contact links; WhatsApp uses the phone number.'],
     'story' => ['label' => 'Our Story',     'help' => 'Only the first active row is shown. Body = story paragraphs (blank line between paragraphs). Subtitle = pull quote.'],
     'value' => ['label' => 'Values',        'help' => 'Each row is one value. Title + short body. Icon is optional (emoji, or: compass, hiking, binoculars, globe).'],
     'team'  => ['label' => 'Hosts & Team',  'help' => 'Each row is one person or team. Title = name, Subtitle = role, Body = short bio, Image = photo.'],
@@ -104,6 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $imageUrl     = trim($_POST['image_url'] ?? '');
         $imageAlt     = trim($_POST['image_alt'] ?? '');
         $icon         = trim($_POST['icon'] ?? '');
+        $phone        = trim($_POST['phone'] ?? '');
+        $email        = trim($_POST['email'] ?? '');
         $displayOrder = (int) ($_POST['display_order'] ?? 0);
         $isActive     = isset($_POST['is_active']) ? 1 : 0;
 
@@ -111,6 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Choose a valid section.';
         } elseif ($title === '') {
             $error = 'Title is required.';
+        } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Enter a valid email address.';
         } else {
             $uploaded = about_store_upload($_FILES['image_file'] ?? [], $uploadDir, $error);
             if ($uploaded) {
@@ -121,16 +126,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$error) {
             if ($action === 'create') {
                 $stmt = $conn->prepare(
-                    "INSERT INTO about_sections (section_type, title, subtitle, body, image_url, image_alt, icon, display_order, is_active)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    "INSERT INTO about_sections (section_type, title, subtitle, body, image_url, image_alt, icon, phone, email, display_order, is_active)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 );
-                $stmt->bind_param('sssssssii', $type, $title, $subtitle, $body, $imageUrl, $imageAlt, $icon, $displayOrder, $isActive);
+                $stmt->bind_param('sssssssssii', $type, $title, $subtitle, $body, $imageUrl, $imageAlt, $icon, $phone, $email, $displayOrder, $isActive);
             } else {
                 $stmt = $conn->prepare(
-                    "UPDATE about_sections SET section_type=?, title=?, subtitle=?, body=?, image_url=?, image_alt=?, icon=?, display_order=?, is_active=?
+                    "UPDATE about_sections SET section_type=?, title=?, subtitle=?, body=?, image_url=?, image_alt=?, icon=?, phone=?, email=?, display_order=?, is_active=?
                      WHERE id=?"
                 );
-                $stmt->bind_param('sssssssiii', $type, $title, $subtitle, $body, $imageUrl, $imageAlt, $icon, $displayOrder, $isActive, $id);
+                $stmt->bind_param('sssssssssiii', $type, $title, $subtitle, $body, $imageUrl, $imageAlt, $icon, $phone, $email, $displayOrder, $isActive, $id);
             }
 
             if ($stmt->execute()) {
@@ -150,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ---------- Fetch all blocks, grouped by section ----------
 $blocks = array_fill_keys(array_keys($sectionTypes), []);
-$res = $conn->query("SELECT id, section_type, title, subtitle, body, image_url, image_alt, icon, display_order, is_active FROM about_sections ORDER BY display_order ASC, id ASC");
+$res = $conn->query("SELECT id, section_type, title, subtitle, body, image_url, image_alt, icon, phone, email, display_order, is_active FROM about_sections ORDER BY display_order ASC, id ASC");
 if ($res) {
     while ($r = $res->fetch_assoc()) {
         $r['id']            = (int) $r['id'];
@@ -161,7 +166,7 @@ if ($res) {
         }
     }
 } else {
-    $error = $error ?: 'The about_sections table is missing. Run backend/migrations/add_about_sections.sql first.';
+    $error = $error ?: 'The About tables are not up to date. Run backend/migrations/add_about_sections.sql, then add_about_owner.sql.';
 }
 ?>
 
@@ -293,6 +298,17 @@ if ($res) {
                 </div>
             </div>
 
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="aboutPhone">Phone / WhatsApp (owner only)</label>
+                    <input id="aboutPhone" class="form-control" name="phone" placeholder="+977 98XXXXXXXX">
+                </div>
+                <div class="form-group">
+                    <label for="aboutEmail">Email (owner only)</label>
+                    <input type="email" id="aboutEmail" class="form-control" name="email" placeholder="name@example.com">
+                </div>
+            </div>
+
             <div class="check-group" style="margin-bottom:16px;">
                 <input type="checkbox" id="aboutActive" name="is_active" value="1" checked>
                 <label for="aboutActive">Active (visible on the website)</label>
@@ -326,6 +342,8 @@ function openAboutModal(data = {}) {
     document.getElementById('aboutImageUrl').value = data.image_url || '';
     document.getElementById('aboutImageAlt').value = data.image_alt || '';
     document.getElementById('aboutIcon').value = data.icon || '';
+    document.getElementById('aboutPhone').value = data.phone || '';
+    document.getElementById('aboutEmail').value = data.email || '';
     document.getElementById('aboutOrder').value = data.display_order || 1;
     document.getElementById('aboutActive').checked = isEdit ? !!data.is_active : true;
     updateAboutHelp();

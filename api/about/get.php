@@ -2,7 +2,7 @@
 /**
  * GET /api/about/get
  * Public About Us page content (active rows only), grouped by section:
- * { hero: {...}|null, story: {...}|null, values: [...], team: [...] }
+ * { hero: {...}|null, story: {...}|null, owner: {...}|null, values: [...], team: [...] }
  */
 
 if (getRequestMethod() !== 'GET') {
@@ -10,7 +10,7 @@ if (getRequestMethod() !== 'GET') {
 }
 
 $result = $conn->query(
-    "SELECT id, section_type, title, subtitle, body, image_url, image_alt, icon, display_order
+    "SELECT id, section_type, title, subtitle, body, image_url, image_alt, icon, phone, email, display_order
      FROM about_sections
      WHERE is_active = 1
      ORDER BY display_order ASC, id ASC"
@@ -21,7 +21,7 @@ if (!$result) {
     jsonResponse(500, 'error', null, 'Failed to fetch About page content.');
 }
 
-$about = ['hero' => null, 'story' => null, 'values' => [], 'team' => []];
+$about = ['hero' => null, 'story' => null, 'owner' => null, 'values' => [], 'team' => []];
 
 while ($row = $result->fetch_assoc()) {
     $row['id']            = (int) $row['id'];
@@ -34,7 +34,7 @@ while ($row = $result->fetch_assoc()) {
     $type = $row['section_type'];
     unset($row['section_type']);
 
-    if (($type === 'hero' || $type === 'story') && $about[$type] === null) {
+    if (in_array($type, ['hero', 'story', 'owner'], true) && $about[$type] === null) {
         $about[$type] = $row;
     } elseif ($type === 'value') {
         $about['values'][] = $row;
